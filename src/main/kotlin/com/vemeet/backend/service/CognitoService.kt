@@ -2,6 +2,9 @@ package com.vemeet.backend.service
 
 import com.amazonaws.services.cognitoidp.AWSCognitoIdentityProvider
 import com.amazonaws.services.cognitoidp.model.*
+import com.vemeet.backend.exception.ConfirmationCodeExpiredException
+import com.vemeet.backend.exception.EmailAlreadyExistsException
+import com.vemeet.backend.exception.InvalidConfirmationCodeException
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Service
 import javax.crypto.Mac
@@ -21,6 +24,7 @@ class CognitoService(private val cognitoClient: AWSCognitoIdentityProvider) {
     @Value("\${aws.cognito.client-secret}")
     private lateinit var clientSecret: String
 
+
     fun signUp(email: String, password: String, additionalAttributes: Map<String, String>): SignUpResult {
         val userAttributes = additionalAttributes.map { (key, value) ->
             AttributeType().withName(key).withValue(value)
@@ -37,7 +41,19 @@ class CognitoService(private val cognitoClient: AWSCognitoIdentityProvider) {
             .withUserAttributes(userAttributes)
             .withSecretHash(secretHash)
 
-        return cognitoClient.signUp(request)
+        try {
+            return cognitoClient.signUp(request)
+        } catch (e: UsernameExistsException) {
+            throw EmailAlreadyExistsException("Email already exists in Cognito")
+        }
+    }
+
+    fun deleteUser(username: String) {
+        val request = AdminDeleteUserRequest()
+            .withUserPoolId(userPoolId)
+            .withUsername(username)
+
+        cognitoClient.adminDeleteUser(request)
     }
 
     fun confirmSignUp(email: String, confirmationCode: String) {
@@ -49,7 +65,17 @@ class CognitoService(private val cognitoClient: AWSCognitoIdentityProvider) {
             .withConfirmationCode(confirmationCode)
             .withSecretHash(secretHash)
 
-        cognitoClient.confirmSignUp(request)
+        try {
+            cognitoClient.confirmSignUp(request)
+        } catch (e: ExpiredCodeException) {
+            throw ConfirmationCodeExpiredException("Confirmation code has expired")
+        } catch (e: CodeMismatchException) {
+            throw InvalidConfirmationCodeException("Invalid confirmation code")
+        } catch (e: UserNotFoundException) {
+            throw UserNotFoundException("User not found")
+        } catch (e: Exception) {
+            throw Exception("Failed to confirm user: ${e.message}")
+        }
     }
 
     fun initiateAuth(email: String, password: String): InitiateAuthResult {
@@ -69,6 +95,13 @@ class CognitoService(private val cognitoClient: AWSCognitoIdentityProvider) {
         return cognitoClient.initiateAuth(request)
     }
 
+    fun getUserSub(accessToken: String): String {
+        val request = GetUserRequest().withAccessToken(accessToken)
+        val result = cognitoClient.getUser(request)
+        return result.userAttributes.find { it.name == "sub" }?.value
+            ?: throw Exception("Unable to find user sub")
+    }
+
     private fun calculateSecretHash(username: String): String {
         val message = username + clientId
         val secretKey = SecretKeySpec(clientSecret.toByteArray(StandardCharsets.UTF_8), "HmacSHA256")
@@ -77,4 +110,19 @@ class CognitoService(private val cognitoClient: AWSCognitoIdentityProvider) {
         val rawHmac = mac.doFinal(message.toByteArray(StandardCharsets.UTF_8))
         return Base64.getEncoder().encodeToString(rawHmac)
     }
+
+    fun getCognitoUserByEmail(email: String): String {
+        val request = AdminGetUserRequest()
+            .withUserPoolId(userPoolId)
+            .withUsername(email)
+        try {
+            val result = cognitoClient.adminGetUser(request)
+             return result.username // Cognito User ID (sub)
+        } catch (e: UserNotFoundException) {
+            throw UserNotFoundException("User not found in Cognito")
+        } catch (e: Exception) {
+            throw Exception("Failed to get Cognito user: ${e.message}")
+        }
+    }
+
 }

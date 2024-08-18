@@ -11,7 +11,7 @@ data class User(
     val id: Long = 0,
 
     @Column(unique = true, nullable = false)
-    val username: String,
+    var username: String,
 
     @Column(nullable = false)
     val birthday: LocalDate,
@@ -23,39 +23,39 @@ data class User(
     val createdAt: ZonedDateTime = ZonedDateTime.now(),
 
     @Column(name = "initial_setup")
-    val initialSetup: Boolean = false,
+    var initialSetup: Boolean = false,
 
-    val verified: Boolean = false,
+    var verified: Boolean = false,
 
     @Column(name = "is_private")
-    val isPrivate: Boolean = false,
+    var isPrivate: Boolean = false,
 
     @Column(name = "inbox_locked")
-    val inboxLocked: Boolean = false,
-
-    val name: String? = null,
+    var inboxLocked: Boolean = false,
 
     val gender: Boolean? = null,
 
     @Column(name = "birthplace_lat")
-    val birthplaceLat: Double? = null,
+    var birthplaceLat: Double? = null,
 
     @Column(name = "birthplace_lng")
-    val birthplaceLng: Double? = null,
+    var birthplaceLng: Double? = null,
 
     @Column(name = "birthplace_name")
-    val birthplaceName: String? = null,
+    var birthplaceName: String? = null,
 
     @Column(name = "residence_lat")
-    val residenceLat: Double? = null,
+    var residenceLat: Double? = null,
 
     @Column(name = "residence_lng")
-    val residenceLng: Double? = null,
+    var residenceLng: Double? = null,
 
     @Column(name = "residence_name")
-    val residenceName: String? = null,
+    var residenceName: String? = null,
 
-    val bio: String? = null,
+    var bio: String? = null,
+
+    var name: String? = null,
 
     @Column(name = "profile_image_id")
     val profileImageId: Long? = null

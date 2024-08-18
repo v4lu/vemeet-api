@@ -24,6 +24,7 @@ dependencies {
 	implementation("org.springframework.boot:spring-boot-starter-data-jpa")
 	implementation("org.springframework.boot:spring-boot-starter-web")
 	implementation("com.fasterxml.jackson.module:jackson-module-kotlin")
+	implementation("org.springframework.boot:spring-boot-starter-validation")
 	implementation("com.amazonaws:aws-java-sdk-cognitoidp:1.12.762")
 
 	runtimeOnly("org.postgresql:postgresql")
