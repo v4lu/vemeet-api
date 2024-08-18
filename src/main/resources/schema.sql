@@ -4,7 +4,6 @@ CREATE TABLE IF NOT EXISTS users (
     birthday date NOT NULL,
     aws_cognito_id text NOT NULL UNIQUE,
     created_at timestamp with time zone DEFAULT now(),
-    initial_setup boolean DEFAULT false,
     verified boolean DEFAULT false,
     is_private boolean DEFAULT false,
     inbox_locked boolean DEFAULT false,

@@ -76,5 +76,3 @@ class AuthController(
     }
 
 }
-
-data class ConfirmRequest(val email: String, val confirmationCode: String)

@@ -109,5 +109,14 @@ class GlobalExceptionHandler {
         return ResponseEntity(errorResponse, HttpStatus.INTERNAL_SERVER_ERROR)
     }
 
+    @ExceptionHandler(UnauthorizedException::class)
+    fun handleUnauthorizedException(ex: UnauthorizedException): ResponseEntity<ErrorResponse> {
+        val errorResponse = ErrorResponse(
+            statusCode = HttpStatus.UNAUTHORIZED.value(),
+            message = ex.message ?: "Unauthorized"
+        )
+        return ResponseEntity(errorResponse, HttpStatus.UNAUTHORIZED)
+    }
+
 
 }

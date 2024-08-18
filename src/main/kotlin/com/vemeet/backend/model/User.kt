@@ -22,9 +22,6 @@ data class User(
     @Column(name = "created_at")
     val createdAt: ZonedDateTime = ZonedDateTime.now(),
 
-    @Column(name = "initial_setup")
-    var initialSetup: Boolean = false,
-
     var verified: Boolean = false,
 
     @Column(name = "is_private")
