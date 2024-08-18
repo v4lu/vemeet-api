@@ -1,9 +1,6 @@
 package com.vemeet.backend.controller
 
-import com.vemeet.backend.dto.AuthMessageResponse
-import com.vemeet.backend.dto.LoginRequest
-import com.vemeet.backend.dto.LoginResponse
-import com.vemeet.backend.dto.SignUpRequest
+import com.vemeet.backend.dto.*
 import com.vemeet.backend.exception.BadRequestException
 import com.vemeet.backend.exception.EmailAlreadyExistsException
 import com.vemeet.backend.service.CognitoService
@@ -65,6 +62,18 @@ class AuthController(
     }
 
 
+    @PostMapping("/refresh")
+    fun refreshAccessToken(
+        @RequestHeader("Refresh-Token") refreshToken: String?,
+        @RequestParam("id") awsId: String?
+    ): ResponseEntity<RefreshTokenResponse> {
+        if (refreshToken.isNullOrBlank() || awsId.isNullOrBlank()) {
+            throw BadRequestException("Refresh-Token and id are required")
+        }
+
+        val response = authService.refreshAccessToken(refreshToken, awsId)
+        return ResponseEntity.ok(response)
+    }
 
 }
 

@@ -1,0 +1,13 @@
+services:
+  cache:
+    image: redis:alpine
+    ports:
+      - "6379:6379"
+    networks:
+      - ve
+
+networks:
+  ve:
+
+volumes:
+  postgres_data:

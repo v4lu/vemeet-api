@@ -2,6 +2,7 @@ package com.vemeet.backend.service
 
 import com.amazonaws.services.cognitoidp.model.UserNotFoundException
 import com.vemeet.backend.dto.LoginResponse
+import com.vemeet.backend.dto.RefreshTokenResponse
 import com.vemeet.backend.exception.BadRequestException
 import com.vemeet.backend.exception.InvalidCredentialsException
 import com.vemeet.backend.model.User
@@ -15,7 +16,8 @@ import java.time.temporal.ChronoUnit
 @Service
 class AuthService(
     private val userRepository: UserRepository,
-    private val cognitoService: CognitoService
+    private val cognitoService: CognitoService,
+    private val userCacheService: UserCacheService
 ) {
 
     fun createUser(username: String, birthday: LocalDate, awsCognitoId: String): User {
@@ -47,6 +49,12 @@ class AuthService(
         val user = findByAwsCognitoId(cognitoId)
             ?: throw UserNotFoundException("User not found in the database")
 
+        userCacheService.setUserByToken(
+            authResult.authenticationResult.accessToken,
+            authResult.authenticationResult.expiresIn.toLong(),
+            user
+        )
+
         val now = Instant.now()
         val thirtyDaysLater = now.plus(30, ChronoUnit.DAYS)
 
@@ -64,6 +72,28 @@ class AuthService(
         val user = userRepository.findByAwsCognitoId(id) ?: throw UserNotFoundException("User not found with")
         user.verified = true
         userRepository.save(user)
+    }
+
+    fun refreshAccessToken(refreshToken: String, awsId: String): RefreshTokenResponse {
+        val authResult = cognitoService.refreshAccessToken(refreshToken, awsId)
+
+        val cognitoId = cognitoService.getUserSub(authResult.authenticationResult.accessToken)
+
+        val user = findByAwsCognitoId(cognitoId)
+            ?: throw UserNotFoundException("User not found in the database")
+
+        userCacheService.setUserByToken(
+            authResult.authenticationResult.accessToken,
+            authResult.authenticationResult.expiresIn.toLong(),
+            user
+        )
+
+        val accessTokenExpiry = Instant.now().plusSeconds(authResult.authenticationResult.expiresIn.toLong())
+
+        return RefreshTokenResponse(
+            accessToken = authResult.authenticationResult.accessToken,
+            accessTokenExpiry = accessTokenExpiry
+        )
     }
 
     fun findByUsername(username: String): User? = userRepository.findByUsername(username)

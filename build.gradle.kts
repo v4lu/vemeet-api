@@ -26,6 +26,7 @@ dependencies {
 	implementation("com.fasterxml.jackson.module:jackson-module-kotlin")
 	implementation("org.springframework.boot:spring-boot-starter-validation")
 	implementation("com.amazonaws:aws-java-sdk-cognitoidp:1.12.762")
+	implementation("org.springframework.boot:spring-boot-starter-data-redis")
 
 	runtimeOnly("org.postgresql:postgresql")
 

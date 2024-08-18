@@ -125,4 +125,19 @@ class CognitoService(private val cognitoClient: AWSCognitoIdentityProvider) {
         }
     }
 
+    fun refreshAccessToken(refreshToken: String, awsId: String): InitiateAuthResult {
+        val authParameters = mapOf(
+            "REFRESH_TOKEN" to refreshToken,
+            "SECRET_HASH" to calculateSecretHash(awsId)
+        )
+
+        val request = InitiateAuthRequest()
+            .withAuthFlow(AuthFlowType.REFRESH_TOKEN_AUTH)
+            .withClientId(clientId)
+            .withAuthParameters(authParameters)
+
+        return cognitoClient.initiateAuth(request)
+    }
+
+
 }

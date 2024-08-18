@@ -57,3 +57,8 @@ data class LoginResponse(
     val accessToken: String,
     val accessTokenExpiry: Instant
 )
+
+data class RefreshTokenResponse(
+    val accessToken: String,
+    val accessTokenExpiry: Instant
+)
