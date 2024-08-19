@@ -4,11 +4,13 @@ import com.amazonaws.services.cognitoidp.model.UserNotFoundException
 import org.slf4j.LoggerFactory
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
+import org.springframework.web.HttpRequestMethodNotSupportedException
 import org.springframework.web.bind.MethodArgumentNotValidException
 import org.springframework.web.bind.annotation.ControllerAdvice
 import org.springframework.web.bind.annotation.ExceptionHandler
 import org.springframework.web.context.request.WebRequest
 import org.springframework.web.servlet.NoHandlerFoundException
+import org.springframework.web.servlet.resource.NoResourceFoundException
 
 @ControllerAdvice
 class GlobalExceptionHandler {
@@ -39,6 +41,25 @@ class GlobalExceptionHandler {
             message = "The requested resource was not found"
         )
         return ResponseEntity(errorResponse, HttpStatus.NOT_FOUND)
+    }
+
+    @ExceptionHandler(NoResourceFoundException::class)
+    fun handleNoResourceFoundException(ex: NoResourceFoundException): ResponseEntity<ErrorResponse> {
+        val errorResponse = ErrorResponse(
+            statusCode = HttpStatus.NOT_FOUND.value(),
+            message = "The requested resource was not found",
+        )
+        return ResponseEntity(errorResponse, HttpStatus.NOT_FOUND)
+    }
+
+
+    @ExceptionHandler(HttpRequestMethodNotSupportedException::class)
+    fun handleMethodNotAllowed(ex: HttpRequestMethodNotSupportedException): ResponseEntity<ErrorResponse> {
+        val errorResponse = ErrorResponse(
+            statusCode = HttpStatus.METHOD_NOT_ALLOWED.value(),
+            message = "The requested method is not allowed for this endpoint",
+        )
+        return ResponseEntity(errorResponse, HttpStatus.METHOD_NOT_ALLOWED)
     }
 
     @ExceptionHandler(MethodArgumentNotValidException::class)

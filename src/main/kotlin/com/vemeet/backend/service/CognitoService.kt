@@ -15,13 +15,13 @@ import java.util.*
 @Service
 class CognitoService(private val cognitoClient: AWSCognitoIdentityProvider) {
 
-    @Value("\${aws.cognito.user-pool-id}")
+    @Value("\${AWS_COGNITO_USER_POOL}")
     private lateinit var userPoolId: String
 
-    @Value("\${aws.cognito.client-id}")
+    @Value("\${AWS_COGNITO_CLIENT_ID}")
     private lateinit var clientId: String
 
-    @Value("\${aws.cognito.client-secret}")
+    @Value("\${AWS_COGNITO_SECRET}")
     private lateinit var clientSecret: String
 
 

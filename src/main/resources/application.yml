@@ -16,21 +16,26 @@ spring:
       mode: always
       schema-locations: classpath:schema.sql
       continue-on-error: true
+  data:
+    redis:
+      port: 6379
+      host: localhost
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: https://cognito-idp.eu-central-1.amazonaws.com/${AWS_COGNITO_USER_POOL}
+          jwk-set-uri: https://cognito-idp.eu-central-1.amazonaws.com/${AWS_COGNITO_USER_POOL}/.well-known/jwks.json
 
-  redis:
-    host: localhost
-    port: 6379
-
-
-aws:
-  cognito:
-    region: ${AWS_REGION}
-    accessKey: ${AWS_ACCESS_KEY}
-    secretKey: ${AWS_SECRET_KEY}
-    userPoolId: ${AWS_COGNITO_USER_POOL}
-    clientId: ${AWS_COGNITO_CLIENT_ID}
-    clientSecret: ${AWS_COGNITO_SECRET}
-    domain: ${AWS_COGNITO_DOMAIN}
+  aws:
+    cognito:
+      region: eu-central-1
+      accessKey: ${AWS_ACCESS_KEY}
+      secretKey: ${AWS_SECRET_KEY}
+      userPoolId: ${AWS_COGNITO_USER_POOL}
+      clientId: ${AWS_COGNITO_CLIENT_ID}
+      clientSecret: ${AWS_COGNITO_SECRET}
+      domain: ${AWS_COGNITO_DOMAIN}
 
 
 logging:

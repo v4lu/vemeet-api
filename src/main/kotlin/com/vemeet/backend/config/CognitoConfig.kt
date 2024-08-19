@@ -5,19 +5,20 @@ import com.amazonaws.auth.BasicAWSCredentials
 import com.amazonaws.services.cognitoidp.AWSCognitoIdentityProvider
 import com.amazonaws.services.cognitoidp.AWSCognitoIdentityProviderClientBuilder
 import org.springframework.beans.factory.annotation.Value
+import org.springframework.boot.context.properties.ConfigurationProperties
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 
 @Configuration
+@ConfigurationProperties(prefix = "aws.cognito")
 class CognitoConfig {
 
-    @Value("\${aws.cognito.region}")
-    private lateinit var cognitoRegion: String
+    private  var cognitoRegion: String = "eu-central-1"
 
-    @Value("\${aws.cognito.access-key}")
+    @Value("\${AWS_ACCESS_KEY}")
     private lateinit var cognitoAccessKey: String
 
-    @Value("\${aws.cognito.secret-key}")
+    @Value("\${AWS_SECRET_KEY}")
     private lateinit var cognitoSecretKey: String
 
     @Bean
