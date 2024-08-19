@@ -38,9 +38,12 @@ spring:
       domain: ${AWS_COGNITO_DOMAIN}
 
 
-logging:
-  level:
-    org.hibernate.SQL: DEBUG
-    org.hibernate.type.descriptor.sql.BasicBinder: TRACE
 server:
-  port: 8081
+  port: 8080
+
+# Swagger
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+  swagger-ui:
+    path: /swagger-ui

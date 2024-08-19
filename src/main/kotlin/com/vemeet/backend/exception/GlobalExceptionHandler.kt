@@ -120,16 +120,6 @@ class GlobalExceptionHandler {
         return ResponseEntity(errorResponse, HttpStatus.UNAUTHORIZED)
     }
 
-    @ExceptionHandler(Exception::class)
-    fun handleAllUncaughtException(ex: Exception, request: WebRequest): ResponseEntity<ErrorResponse> {
-        logger.error("Unexpected error", ex)
-        val errorResponse = ErrorResponse(
-            statusCode = HttpStatus.INTERNAL_SERVER_ERROR.value(),
-            message = "An unexpected error occurred"
-        )
-        return ResponseEntity(errorResponse, HttpStatus.INTERNAL_SERVER_ERROR)
-    }
-
     @ExceptionHandler(UnauthorizedException::class)
     fun handleUnauthorizedException(ex: UnauthorizedException): ResponseEntity<ErrorResponse> {
         val errorResponse = ErrorResponse(
@@ -139,5 +129,14 @@ class GlobalExceptionHandler {
         return ResponseEntity(errorResponse, HttpStatus.UNAUTHORIZED)
     }
 
+    @ExceptionHandler(Exception::class)
+    fun handleAllUncaughtException(ex: Exception, request: WebRequest): ResponseEntity<ErrorResponse> {
+        logger.error("Unexpected error", ex)
+        val errorResponse = ErrorResponse(
+            statusCode = HttpStatus.INTERNAL_SERVER_ERROR.value(),
+            message = "An unexpected error occurred"
+        )
+        return ResponseEntity(errorResponse, HttpStatus.INTERNAL_SERVER_ERROR)
+    }
 
 }
