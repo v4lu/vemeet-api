@@ -1,13 +1,15 @@
 services:
-  cache:
-    image: redis:alpine
-    ports:
-      - "6379:6379"
-    networks:
-      - ve
+    cache:
+      image: redis:alpine
+      ports:
+        - "6379:6379"
+      volumes:
+        - redis_vemeet_data:/data
+      networks:
+        - ve
 
 networks:
   ve:
 
 volumes:
-  postgres_data:
+  redis_vemeet_data:

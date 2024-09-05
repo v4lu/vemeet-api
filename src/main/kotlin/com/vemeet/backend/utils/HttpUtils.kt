@@ -1,10 +1,11 @@
 package com.vemeet.backend.utils
 
-import com.vemeet.backend.exception.UnauthorizedException
+import org.springframework.security.authentication.BadCredentialsException
+
 
 fun extractAccessToken(authHeader: String): String {
     if (!authHeader.startsWith("Bearer ")) {
-        throw UnauthorizedException("Invalid authorization header")
+        throw BadCredentialsException("Invalid authorization header")
     }
     return authHeader.substring(7) // Remove "Bearer " prefix
 }

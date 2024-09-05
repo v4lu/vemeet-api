@@ -3,6 +3,7 @@ plugins {
 	kotlin("plugin.spring") version "1.9.24"
 	id("org.springframework.boot") version "3.3.2"
 	id("io.spring.dependency-management") version "1.1.6"
+	id("com.google.cloud.tools.jib") version "3.3.1"
 }
 
 group = "com.vemeet"
@@ -49,4 +50,19 @@ kotlin {
 
 tasks.withType<Test> {
 	useJUnitPlatform()
+}
+
+jib {
+	from {
+		image = "eclipse-temurin:21-jre-alpine"
+	}
+	to {
+		image = "scyllaflow/core"
+		tags = setOf("latest")
+	}
+	container {
+		jvmFlags = listOf("-Xms512m", "-Xmx512m")
+		ports = listOf("8080")
+		mainClass = "com.vemeet.backend.BackendApplicationKt"
+	}
 }
