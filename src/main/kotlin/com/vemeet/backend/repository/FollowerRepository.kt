@@ -11,4 +11,5 @@ interface FollowerRepository : JpaRepository<Follower, Long> {
     fun countByFollowedId(followedId: Long): Int
     fun findByFollowerId(followerId: Long): List<Follower>
     fun findByFollowedId(followedId: Long): List<Follower>
+    fun existsByFollowerIdAndFollowedId(followerId: Long, followedId: Long): Boolean
 }
