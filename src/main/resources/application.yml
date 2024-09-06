@@ -25,15 +25,15 @@ spring:
           issuer-uri: https://cognito-idp.eu-central-1.amazonaws.com/${AWS_COGNITO_USER_POOL}
           jwk-set-uri: https://cognito-idp.eu-central-1.amazonaws.com/${AWS_COGNITO_USER_POOL}/.well-known/jwks.json
 
-  aws:
-    cognito:
-      region: eu-central-1
-      accessKey: ${AWS_ACCESS_KEY}
-      secretKey: ${AWS_SECRET_KEY}
-      userPoolId: ${AWS_COGNITO_USER_POOL}
-      clientId: ${AWS_COGNITO_CLIENT_ID}
-      clientSecret: ${AWS_COGNITO_SECRET}
-      domain: ${AWS_COGNITO_DOMAIN}
+aws:
+  region: eu-central-1
+  accessKey: ${AWS_ACCESS_KEY}
+  secretKey: ${AWS_SECRET_KEY}
+  cognitoUserPoolId: ${AWS_COGNITO_USER_POOL}
+  cognitoClientId: ${AWS_COGNITO_CLIENT_ID}
+  cognitoSecret: ${AWS_COGNITO_SECRET}
+  cognitoDomain: ${AWS_COGNITO_DOMAIN}
+  s3BucketName: ${AWS_S3_BUCKET}
 
 
 server:

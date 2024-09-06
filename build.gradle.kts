@@ -27,6 +27,7 @@ dependencies {
 	implementation("com.fasterxml.jackson.module:jackson-module-kotlin")
 	implementation("org.springframework.boot:spring-boot-starter-validation")
 	implementation("com.amazonaws:aws-java-sdk-cognitoidp:1.12.762")
+	implementation("software.amazon.awssdk:s3:2.17.102")
 	implementation("org.springframework.boot:spring-boot-starter-data-redis")
 	implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:2.1.0")
 	implementation("org.springframework.security:spring-security-oauth2-jose")

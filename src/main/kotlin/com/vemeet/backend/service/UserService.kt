@@ -7,13 +7,21 @@ import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import com.vemeet.backend.dto.UserUpdateRequest
 import com.vemeet.backend.exception.ConflictException
+import com.vemeet.backend.exception.NotAllowedException
+import com.vemeet.backend.exception.ResourceNotFoundException
+import com.vemeet.backend.model.Image
+import com.vemeet.backend.repository.ImageRepository
+import org.slf4j.LoggerFactory
 import org.springframework.dao.DataIntegrityViolationException
 
 @Service
 class UserService(
     private val userRepository: UserRepository,
-    private val userCache: UserCache
+    private val userCache: UserCache,
+    private val imageRepository: ImageRepository
 ) {
+    private val logger = LoggerFactory.getLogger(UserService::class.java)
+
     fun getSessionUser(accessToken: String): User {
         return userCache.getUserSession(accessToken)
             ?: throw Exception("User not found in cache")
@@ -46,6 +54,28 @@ class UserService(
         userUpdateRequest.isPrivate?.let { user.isPrivate = it }
         userUpdateRequest.inboxLocked.let { user.inboxLocked = it }
 
+        when {
+            userUpdateRequest.newImageUrl != null -> {
+                logger.info("Attempting to set new profile image URL: ${userUpdateRequest.newImageUrl}")
+                try {
+                    val newImage = Image(url = userUpdateRequest.newImageUrl, user = user)
+                    val savedImage = imageRepository.save(newImage)
+                    user.profileImage = savedImage
+                } catch (e: Exception) {
+                    logger.error("Error saving new image: ${e.message}", e)
+                    throw e
+                }
+            }
+            userUpdateRequest.existingImageId != null -> {
+                val existingImage = imageRepository.findById(userUpdateRequest.existingImageId)
+                    .orElseThrow { ResourceNotFoundException("Image not found") }
+                if (existingImage.user?.id != user.id) {
+                    throw NotAllowedException("You don't have permission to use this image")
+                }
+                user.profileImage = existingImage
+            }
+        }
+
         try {
             val updatedUser = userRepository.save(user)
             userCache.cacheUserSession(accessToken, 3600, updatedUser) // 1h
@@ -54,6 +84,9 @@ class UserService(
             if (e.cause?.cause?.message?.contains("users_username_key") == true) {
                 throw ConflictException("Username already exists")
             }
+            throw e
+        } catch (e: Exception) {
+            logger.error("Error saving new user: ${e.message}", e)
             throw e
         }
     }

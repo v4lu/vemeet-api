@@ -15,10 +15,10 @@ class CognitoConfig {
 
     private  var cognitoRegion: String = "eu-central-1"
 
-    @Value("\${AWS_ACCESS_KEY}")
+    @Value("\${aws.accessKey}")
     private lateinit var cognitoAccessKey: String
 
-    @Value("\${AWS_SECRET_KEY}")
+    @Value("\${aws.secretKey}")
     private lateinit var cognitoSecretKey: String
 
     @Bean

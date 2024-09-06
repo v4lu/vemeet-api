@@ -2,6 +2,7 @@ package com.vemeet.backend.dto
 
 import com.vemeet.backend.model.User
 import io.swagger.v3.oas.annotations.media.Schema
+import org.hibernate.validator.constraints.URL
 import java.time.format.DateTimeFormatter
 
 @Schema(description = "User Response object")
@@ -123,4 +124,11 @@ data class UserUpdateRequest(
 
     @Schema(description = "Whether the user's inbox is locked", example = "false")
     val inboxLocked: Boolean,
+
+    @Schema(description = "User's new profile image URL", example = "https://example.com/new-profile.jpg")
+    @field:URL(message = "URL is required")
+    val newImageUrl: String? = null,
+
+    @Schema(description = "ID of an existing image to set as profile picture", example = "1")
+    val existingImageId: Long? = null
 )

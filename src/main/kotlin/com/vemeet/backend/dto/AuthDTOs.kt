@@ -2,6 +2,7 @@ package com.vemeet.backend.dto
 
 import io.swagger.v3.oas.annotations.media.Schema
 import jakarta.validation.constraints.*
+import org.hibernate.validator.constraints.URL
 import java.time.Instant
 
 @Schema(description = "Sign up request")
@@ -28,7 +29,11 @@ data class RegisterRequest(
     @field:NotNull(message = "Birthday is required")
     @field:Past(message = "Birthday must be in the past")
     @Schema(description = "User's birthday", example = "1990-01-01")
-    val birthday: Instant
+    val birthday: Instant,
+
+    @field:URL(message = "URL is required")
+    @Schema(description = "User's profile image URL", example = "https://example.com/profile.jpg")
+    val imageUrl: String? = null
 )
 
 @Schema(description = "Response object for successful registration")
@@ -44,6 +49,9 @@ data class RegisterResponse(
 
     @Schema(description = "Registration timestamp", example = "2024-08-27T10:30:00.000Z")
     val createdAt: String,
+
+    @Schema(description = "User's profile image URL", example = "https://example.com/profile.jpg")
+    val imageUrl: String? = null
 )
 
 

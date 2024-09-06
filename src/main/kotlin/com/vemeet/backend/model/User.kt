@@ -1,5 +1,6 @@
 package com.vemeet.backend.model
 
+import com.fasterxml.jackson.annotation.JsonManagedReference
 import jakarta.persistence.*
 import java.time.Instant
 
@@ -53,6 +54,7 @@ data class User(
 
     var name: String? = null,
 
+    @JsonManagedReference
     @OneToOne(fetch = FetchType.EAGER, cascade = [CascadeType.ALL])
     @JoinColumn(name = "profile_image_id")
     var profileImage: Image? = null

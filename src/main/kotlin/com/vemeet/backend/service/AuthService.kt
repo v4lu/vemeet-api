@@ -5,6 +5,7 @@ import com.amazonaws.services.cognitoidp.model.UserNotFoundException
 import com.vemeet.backend.cache.UserCache
 import com.vemeet.backend.dto.*
 import com.vemeet.backend.exception.ResourceNotFoundException
+import com.vemeet.backend.model.Image
 import com.vemeet.backend.model.User
 import com.vemeet.backend.repository.UserRepository
 import com.vemeet.backend.security.CognitoService
@@ -27,13 +28,21 @@ class AuthService(
             awsCognitoId = awsCognitoId,
             birthday = regReq.birthday,
         )
+
+
+        regReq.imageUrl?.let { url ->
+            val image = Image(url = url, user = user)
+            user.profileImage = image
+        }
+
         val newUser = userRepository.save(user)
 
         return RegisterResponse(
             username = newUser.username,
             email = regReq.email,
-            id=newUser.id,
-            createdAt = DateTimeFormatter.ISO_INSTANT.format(newUser.createdAt)
+            id = newUser.id,
+            createdAt = DateTimeFormatter.ISO_INSTANT.format(newUser.createdAt),
+            imageUrl = newUser.profileImage?.url
         )
     }
 
