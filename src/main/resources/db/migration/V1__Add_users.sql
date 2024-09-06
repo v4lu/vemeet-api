@@ -1,14 +1,37 @@
-CREATE TABLE IF NOT EXISTS users (
-    id bigserial PRIMARY KEY,
-    username text NOT NULL UNIQUE,
-    birthday date NOT NULL,
-    aws_cognito_id text NOT NULL UNIQUE,
-    created_at timestamp with time zone DEFAULT now(),
+CREATE TABLE IF NOT EXISTS users
+(
+    id
+    bigserial
+    PRIMARY
+    KEY,
+    username
+    text
+    NOT
+    NULL
+    UNIQUE,
+    birthday
+    date
+    NOT
+    NULL,
+    aws_cognito_id
+    text
+    NOT
+    NULL
+    UNIQUE,
+    created_at
+    timestamp
+    with
+    time
+    zone
+    DEFAULT
+    now
+(
+),
     verified boolean DEFAULT false,
     is_private boolean DEFAULT false,
     inbox_locked boolean DEFAULT false,
     name text,
-    gender boolean,
+    gender text,
     birthplace_lat double precision,
     birthplace_lng double precision,
     birthplace_name text,
@@ -25,6 +48,11 @@ CREATE TABLE IF NOT EXISTS images (
     url text NOT NULL,
     created_at timestamp with time zone DEFAULT now()
 );
+
+ALTER TABLE users
+ADD CONSTRAINT fk_users_profile_image
+FOREIGN KEY (profile_image_id) REFERENCES images(id);
+
 
 CREATE INDEX idx_users_aws_cognito_id ON users (aws_cognito_id);
 CREATE INDEX idx_users_username ON users (username);

@@ -32,6 +32,7 @@ dependencies {
 	implementation("org.springframework.security:spring-security-oauth2-jose")
 	implementation("org.springframework.security:spring-security-oauth2-resource-server")
 	implementation("org.springframework.boot:spring-boot-starter-security")
+	implementation("org.flywaydb:flyway-core:9.22.3")
 
 	runtimeOnly("org.postgresql:postgresql")
 
@@ -57,7 +58,7 @@ jib {
 		image = "eclipse-temurin:21-jre-alpine"
 	}
 	to {
-		image = "scyllaflow/core"
+		image = "vemeet/core"
 		tags = setOf("latest")
 	}
 	container {

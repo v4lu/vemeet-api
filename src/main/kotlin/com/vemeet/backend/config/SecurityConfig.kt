@@ -1,18 +1,14 @@
 package com.vemeet.backend.config
 
-import com.fasterxml.jackson.databind.ObjectMapper
 import com.vemeet.backend.security.CustomAccessDeniedHandler
 import com.vemeet.backend.security.CustomAuthenticationEntryPoint
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
-import org.springframework.http.HttpStatus
-import org.springframework.http.MediaType
 import org.springframework.security.config.annotation.web.builders.HttpSecurity
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter
 import org.springframework.security.oauth2.server.resource.authentication.JwtGrantedAuthoritiesConverter
 import org.springframework.security.web.SecurityFilterChain
-import org.springframework.security.web.authentication.HttpStatusEntryPoint
 import org.springframework.security.web.util.matcher.AntPathRequestMatcher
 
 @Configuration
@@ -28,7 +24,14 @@ class SecurityConfig(
             .csrf { it.disable() }
             .authorizeHttpRequests { authorize ->
                 authorize
-                    .requestMatchers(AntPathRequestMatcher("/v1/auth/**")).permitAll()
+                    .requestMatchers(
+                        "/v1/auth/login",
+                        "/v1/auth/confirm",
+                        "/v1/auth/register",
+                        "/v1/auth/refresh",
+                        "/v1/auth/password-reset/**",
+                        "/v1/auth/verification-email/resend"
+                    ).permitAll()
                     .requestMatchers("/swagger-ui/**", "/swagger-ui.html", "/v3/api-docs/**").permitAll()
                     .anyRequest().authenticated()
             }

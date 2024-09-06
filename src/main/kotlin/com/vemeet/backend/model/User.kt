@@ -1,8 +1,7 @@
 package com.vemeet.backend.model
 
 import jakarta.persistence.*
-import java.time.LocalDate
-import java.time.ZonedDateTime
+import java.time.Instant
 
 @Entity
 @Table(name = "users")
@@ -11,16 +10,16 @@ data class User(
     val id: Long = 0,
 
     @Column(unique = true, nullable = false)
-    var username: String,
+    var username: String = "",
 
     @Column(nullable = false)
-    val birthday: LocalDate,
+    val birthday: Instant = Instant.now(),
 
     @Column(name = "aws_cognito_id", unique = true, nullable = false)
-    val awsCognitoId: String,
+    val awsCognitoId: String = "",
 
     @Column(name = "created_at")
-    val createdAt: ZonedDateTime = ZonedDateTime.now(),
+    val createdAt: Instant = Instant.now(),
 
     var verified: Boolean = false,
 
@@ -30,7 +29,7 @@ data class User(
     @Column(name = "inbox_locked")
     var inboxLocked: Boolean = false,
 
-    val gender: Boolean? = null,
+    val gender: String? = "",
 
     @Column(name = "birthplace_lat")
     var birthplaceLat: Double? = null,
@@ -54,12 +53,7 @@ data class User(
 
     var name: String? = null,
 
-    @Column(name = "profile_image_id")
-    val profileImageId: Long? = null
-) {
-    constructor() : this(
-        username = "",
-        birthday = LocalDate.now(),
-        awsCognitoId = ""
-    )
-}
+    @OneToOne(fetch = FetchType.EAGER, cascade = [CascadeType.ALL])
+    @JoinColumn(name = "profile_image_id")
+    var profileImage: Image? = null
+)
