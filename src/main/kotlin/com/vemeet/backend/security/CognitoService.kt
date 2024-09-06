@@ -158,14 +158,11 @@ class CognitoService(private val cognitoClient: AWSCognitoIdentityProvider) {
             .withSecretHash(calculateSecretHash(username))
 
         try {
-
             cognitoClient.confirmForgotPassword(request)
-        } catch (e : Exception ) {
-            println(e.message)
-            println(e.cause)
+        } catch (e : CodeMismatchException ) {
+            throw InvalidConfirmationCodeException("Invalid confirmation code")
         }
     }
-
 
     fun resendConfirmationCode(username: String) {
         val request = ResendConfirmationCodeRequest()
@@ -207,6 +204,10 @@ class CognitoService(private val cognitoClient: AWSCognitoIdentityProvider) {
             .withAttributeName(attributeName)
             .withCode(confirmationCode)
 
-        cognitoClient.verifyUserAttribute(request)
+        try {
+            cognitoClient.verifyUserAttribute(request)
+        } catch (e : CodeMismatchException ) {
+            throw InvalidConfirmationCodeException("Invalid confirmation code")
+        }
     }
 }

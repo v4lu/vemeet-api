@@ -101,6 +101,7 @@ class AuthService(
     }
 
     fun initiatePasswordReset(email: String) {
+        cognitoService.getCognitoUserByEmail(email)
         cognitoService.forgotPassword(email)
     }
 
@@ -129,6 +130,7 @@ class AuthService(
     }
 
     fun initiateEmailChange(accessToken: String, newEmail: String) {
+        cognitoService.getCognitoUserByEmail(newEmail)
         cognitoService.initiateUpdateUserAttribute(accessToken, "email", newEmail)
     }
 
