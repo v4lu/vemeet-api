@@ -1,32 +1,9 @@
-CREATE TABLE IF NOT EXISTS users
-(
-    id
-    bigserial
-    PRIMARY
-    KEY,
-    username
-    text
-    NOT
-    NULL
-    UNIQUE,
-    birthday
-    date
-    NOT
-    NULL,
-    aws_cognito_id
-    text
-    NOT
-    NULL
-    UNIQUE,
-    created_at
-    timestamp
-    with
-    time
-    zone
-    DEFAULT
-    now
-(
-),
+CREATE TABLE IF NOT EXISTS users (
+    id bigserial PRIMARY KEY,
+    username text NOT NULL UNIQUE,
+    birthday date NOT NULL,
+    aws_cognito_id text NOT NULL UNIQUE,
+    created_at timestamp with time zone DEFAULT now(),
     verified boolean DEFAULT false,
     is_private boolean DEFAULT false,
     inbox_locked boolean DEFAULT false,
@@ -40,7 +17,7 @@ CREATE TABLE IF NOT EXISTS users
     residence_name text,
     bio text,
     profile_image_id bigint
-);
+    );
 
 CREATE TABLE IF NOT EXISTS images (
     id bigserial PRIMARY KEY,

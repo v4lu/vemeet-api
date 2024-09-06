@@ -29,7 +29,7 @@ data class User(
     @Column(name = "inbox_locked")
     var inboxLocked: Boolean = false,
 
-    val gender: String? = "",
+    var gender: String? = "",
 
     @Column(name = "birthplace_lat")
     var birthplaceLat: Double? = null,
