@@ -21,7 +21,7 @@ import org.springframework.web.bind.annotation.*
 import java.time.Instant
 
 @RestController
-@RequestMapping("/api/v1/recipes")
+@RequestMapping("/v1/recipes")
 @Tag(name = "Recipe", description = "Recipe management APIs")
 class RecipeController(private val recipeService: RecipeService) {
 

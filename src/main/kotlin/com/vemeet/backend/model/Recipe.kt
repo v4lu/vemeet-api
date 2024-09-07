@@ -49,6 +49,9 @@ data class Recipe(
     @OneToMany(mappedBy = "recipe", cascade = [CascadeType.ALL], orphanRemoval = true)
     var images: MutableList<RecipeImage> = mutableListOf(),
 
+    @OneToMany(mappedBy = "recipe", cascade = [CascadeType.ALL], orphanRemoval = true)
+    var comments: MutableList<Comment> = mutableListOf(),
+    
     @ManyToMany
     @JoinTable(
         name = "recipe_tags",

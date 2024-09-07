@@ -1,4 +1,5 @@
 package com.vemeet.backend.service
+
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.time.Duration
@@ -132,21 +133,6 @@ class RecipeService(
 
 
     private fun mapToRecipeResponse(recipe: Recipe): RecipeResponse {
-        return RecipeResponse(
-            id = recipe.id,
-            title = recipe.title,
-            content = recipe.content,
-            instructions = recipe.instructions,
-            ingredients = recipe.ingredients,
-            preparationTime = recipe.preparationTime.toMinutes(),
-            cookingTime = recipe.cookingTime.toMinutes(),
-            servings = recipe.servings,
-            difficulty = recipe.difficulty,
-            category = CategoryResponse(recipe.category?.id ?: 0, recipe.category?.name ?: ""),
-            images = recipe.images.map { RecipeImageResponse(it.id, it.imageUrl) },
-            tags = recipe.tags.map { TagResponse(it.id, it.name) },
-            createdAt = recipe.createdAt,
-            updatedAt = recipe.updatedAt
-        )
+        return RecipeResponse.fromRecipe(recipe)
     }
 }

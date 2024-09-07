@@ -23,6 +23,9 @@ data class Post(
     @OneToMany(mappedBy = "post", cascade = [CascadeType.ALL], orphanRemoval = true)
     var reactions: MutableList<Reaction> = mutableListOf(),
 
+    @OneToMany(mappedBy = "post", cascade = [CascadeType.ALL], orphanRemoval = true)
+    var comments: MutableList<Comment> = mutableListOf(),
+
     @Column(name = "created_at")
     val createdAt: Instant = Instant.now(),
 

@@ -22,12 +22,15 @@ data class PostResponse(
     @Schema(description = "List of reactions to the post")
     val reactions: List<ReactionResponse>,
 
+    @Schema(description = "List of comments on this recipe")
+    val comments: List<CommentResponse>,
+
     @Schema(description = "Post creation date", example = "2024-08-27T10:30:00Z")
     val createdAt: String,
 
     @Schema(description = "Post last update date", example = "2024-08-27T10:30:00Z")
     val updatedAt: String
-) {
+){
     companion object {
         fun fromPost(post: Post): PostResponse {
             return PostResponse(
@@ -36,6 +39,7 @@ data class PostResponse(
                 content = post.content,
                 images = post.images.map { ImageResponse.fromImage(it.image) },
                 reactions = post.reactions.map { ReactionResponse.fromReaction(it) },
+                comments = post.comments.map { CommentResponse.fromComment(it) },
                 createdAt = DateTimeFormatter.ISO_INSTANT.format(post.createdAt),
                 updatedAt = DateTimeFormatter.ISO_INSTANT.format(post.updatedAt)
             )

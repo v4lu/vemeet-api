@@ -4,8 +4,9 @@ import io.swagger.v3.oas.annotations.media.Schema
 import com.fasterxml.jackson.annotation.JsonCreator
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.vemeet.backend.model.Difficulty
-import java.time.Duration
+import com.vemeet.backend.model.Recipe
 import java.time.Instant
+import java.time.format.DateTimeFormatter
 
 @Schema(description = "Request object for creating a new recipe")
 data class CreateRecipeRequest @JsonCreator constructor(
@@ -78,13 +79,37 @@ data class RecipeResponse(
     @Schema(description = "List of recipe tags")
     val tags: List<TagResponse>,
 
+    @Schema(description = "List of comments on this recipe")
+    val comments: List<CommentResponse>,
+
     @Schema(description = "Creation date", example = "2024-08-27T10:30:00Z")
-    val createdAt: Instant,
+    val createdAt: String,
 
     @Schema(description = "Last update date", example = "2024-08-27T10:30:00Z")
-    val updatedAt: Instant
-)
-
+    val updatedAt: String
+) {
+    companion object {
+        fun fromRecipe(recipe: Recipe): RecipeResponse {
+            return RecipeResponse(
+                id = recipe.id,
+                title = recipe.title,
+                content = recipe.content,
+                instructions = recipe.instructions,
+                ingredients = recipe.ingredients,
+                preparationTime = recipe.preparationTime.toMinutes(),
+                cookingTime = recipe.cookingTime.toMinutes(),
+                servings = recipe.servings,
+                difficulty = recipe.difficulty,
+                category = CategoryResponse(recipe.category?.id ?: 0, recipe.category?.name ?: ""),
+                images = recipe.images.map { RecipeImageResponse(it.id, it.imageUrl) },
+                tags = recipe.tags.map { TagResponse(it.id, it.name) },
+                comments = recipe.comments.map { CommentResponse.fromComment(it) },
+                createdAt = DateTimeFormatter.ISO_INSTANT.format(recipe.createdAt),
+                updatedAt = DateTimeFormatter.ISO_INSTANT.format(recipe.updatedAt)
+            )
+        }
+    }
+}
 data class CategoryResponse(
     val id: Long,
     val name: String
