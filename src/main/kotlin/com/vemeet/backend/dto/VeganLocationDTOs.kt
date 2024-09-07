@@ -1,7 +1,6 @@
 package com.vemeet.backend.dto
 
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties
-import com.fasterxml.jackson.annotation.JsonProperty
+import com.vemeet.backend.model.LocationImage
 import com.vemeet.backend.model.VeganLocation
 import io.swagger.v3.oas.annotations.media.Schema
 import java.time.format.DateTimeFormatter
@@ -57,7 +56,10 @@ data class VeganLocationResponse(
     val createdAt: String,
 
     @Schema(description = "Last update date", example = "2024-08-27T10:30:00Z")
-    val updatedAt: String
+    val updatedAt: String,
+
+    @Schema(description = "List of image URLs",  example = "[https://www.greencafe.com, https://www.greencafe.com]")
+    val images: List<LocationImageResponse>
 ) {
     companion object {
         fun fromVeganLocation(location: VeganLocation): VeganLocationResponse {
@@ -78,10 +80,25 @@ data class VeganLocationResponse(
                 user = location.user?.let { UserResponse.fromUser(it) },
                 isVerified = location.isVerified,
                 createdAt = DateTimeFormatter.ISO_INSTANT.format(location.createdAt),
-                updatedAt = DateTimeFormatter.ISO_INSTANT.format(location.updatedAt)
+                updatedAt = DateTimeFormatter.ISO_INSTANT.format(location.updatedAt),
+                images = location.images.map { LocationImageResponse(it) }
             )
         }
     }
+}
+
+@Schema(description = "Images" )
+data class LocationImageResponse(
+    @Schema(description = "Image id", example = "1")
+    val id : Long,
+
+    @Schema(description = "Url of image", example = "https://example.com")
+    val url : String,
+) {
+    constructor(image: LocationImage) : this(
+        id = image.id,
+        url = image.imageUrl
+    )
 }
 
 @Schema(description = "Vegan Location Create/Update Request object")
@@ -120,7 +137,10 @@ data class VeganLocationRequest(
     val openingHours: String?,
 
     @Schema(description = "Price range", example = "$$")
-    val priceRange: String?
+    val priceRange: String?,
+
+    @Schema(description = "List of image URLs",  example = "[https://www.greencafe.com, https://www.greencafe.com]")
+    val images: List<String>?
 )
 
 
@@ -160,5 +180,11 @@ data class VeganLocationUpdateRequest(
     val openingHours: String? = null,
 
     @Schema(description = "Price range", example = "$$")
-    val priceRange: String? = null
+    val priceRange: String? = null,
+
+    @Schema(description = "List of image URLs to add", example = "[https://www.greencafe.com, https://www.greencafe.com]")
+    val imagesToAdd: List<String>? = null,
+
+    @Schema(description = "List of image IDs to remove", example = "[1,2,3]")
+    val imageIdsToRemove: List<Long>? = null
 )

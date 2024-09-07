@@ -1,8 +1,10 @@
 package com.vemeet.backend.service
+
 import com.vemeet.backend.dto.VeganLocationRequest
 import com.vemeet.backend.dto.VeganLocationResponse
 import com.vemeet.backend.dto.VeganLocationUpdateRequest
 import com.vemeet.backend.exception.ResourceNotFoundException
+import com.vemeet.backend.model.LocationImage
 import com.vemeet.backend.model.VeganLocation
 import com.vemeet.backend.repository.VeganLocationRepository
 import org.springframework.data.domain.Page
@@ -50,6 +52,11 @@ class VeganLocationService(
             priceRange = request.priceRange,
             user = user
         )
+
+        request.images?.forEach { imageUrl ->
+            location.images.add(LocationImage(location = location, imageUrl = imageUrl))
+        }
+
         val newLoc =  veganLocationRepository.save(location)
         return VeganLocationResponse.fromVeganLocation(newLoc)
     }
@@ -77,6 +84,14 @@ class VeganLocationService(
             request.openingHours?.let { openingHours = it }
             request.priceRange?.let { priceRange = it }
             updatedAt = Instant.now()
+        }
+
+        request.imagesToAdd?.forEach { imageUrl ->
+            location.images.add(LocationImage(location = location, imageUrl = imageUrl))
+        }
+
+        request.imageIdsToRemove?.let { idsToRemove ->
+            location.images.removeIf { it.id in idsToRemove }
         }
 
         return veganLocationRepository.save(location)

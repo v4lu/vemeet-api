@@ -1,4 +1,5 @@
 package com.vemeet.backend.model
+import com.fasterxml.jackson.annotation.JsonIgnore
 import jakarta.persistence.*
 import java.time.Instant
 
@@ -56,5 +57,28 @@ data class VeganLocation(
     val createdAt: Instant = Instant.now(),
 
     @Column(name = "updated_at")
-    var updatedAt: Instant = Instant.now()
+    var updatedAt: Instant = Instant.now(),
+
+    @OneToMany(mappedBy = "location", cascade = [CascadeType.ALL], orphanRemoval = true)
+    var images: MutableList<LocationImage> = mutableListOf()
+)
+
+
+@Entity
+@Table(name = "location_images")
+data class LocationImage(
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    val id: Long = 0,
+
+    @JsonIgnore
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "location_id", nullable = false)
+    var location: VeganLocation? = null,
+
+    @Column(name="image_url",nullable = false)
+    var imageUrl: String = "",
+
+    @Column(name = "created_at")
+    val createdAt: Instant = Instant.now()
 )

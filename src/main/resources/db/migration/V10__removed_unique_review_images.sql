@@ -1,0 +1,2 @@
+ALTER TABLE review_images
+DROP CONSTRAINT review_images_review_id_key;
