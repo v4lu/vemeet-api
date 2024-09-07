@@ -2,6 +2,7 @@ package com.vemeet.backend.controller
 import com.vemeet.backend.dto.ExceptionResponse
 import com.vemeet.backend.dto.VeganLocationRequest
 import com.vemeet.backend.dto.VeganLocationResponse
+import com.vemeet.backend.dto.VeganLocationUpdateRequest
 import com.vemeet.backend.service.VeganLocationService
 import com.vemeet.backend.utils.extractAccessToken
 import io.swagger.v3.oas.annotations.Operation
@@ -43,6 +44,16 @@ class VeganLocationController(
     @GetMapping
     @Operation(
         summary = "Get all vegan locations",
+        description = """
+        Retrieve a paginated list of vegan locations. Supports searching and sorting.
+        
+        Example usage:
+        - Basic: /v1/vegan-locations
+        - With search: /v1/vegan-locations?search=cafe
+        - With pagination: /v1/vegan-locations?page=0&size=10
+        - With sorting: /v1/vegan-locations?sort=name,asc
+        - Combined: /v1/vegan-locations?search=cafe&page=0&size=10&sort=name,asc&sort=city,desc
+    """,
         responses = [
             ApiResponse(
                 responseCode = "200", description = "Successfully retrieved locations",
@@ -50,8 +61,11 @@ class VeganLocationController(
             )
         ]
     )
-    fun getAllLocations(pageable: Pageable): ResponseEntity<Page<VeganLocationResponse>> {
-        val locations = veganLocationService.getAllLocations(pageable)
+    fun getAllLocations(
+        @RequestParam search: String?,
+        pageable: Pageable
+    ): ResponseEntity<Page<VeganLocationResponse>> {
+        val locations = veganLocationService.getAllLocations(search, pageable)
         return ResponseEntity.ok(locations.map { VeganLocationResponse.fromVeganLocation(it) })
     }
 
@@ -75,12 +89,13 @@ class VeganLocationController(
     ): ResponseEntity<VeganLocationResponse> {
         val accessToken = extractAccessToken(authHeader)
         val createdLocation = veganLocationService.createLocation(request, accessToken)
-        return ResponseEntity.ok(VeganLocationResponse.fromVeganLocation(createdLocation))
+        return ResponseEntity.ok(createdLocation)
     }
 
-    @PutMapping("/{id}")
+    @PatchMapping("/{id}")
     @Operation(
         summary = "Update a vegan location",
+
         responses = [
             ApiResponse(
                 responseCode = "200", description = "Successfully updated location",
@@ -98,7 +113,7 @@ class VeganLocationController(
     )
     fun updateLocation(
         @PathVariable id: Long,
-        @RequestBody request: VeganLocationRequest,
+        @RequestBody request: VeganLocationUpdateRequest,
         @RequestHeader("Authorization") authHeader: String
     ): ResponseEntity<VeganLocationResponse> {
         val accessToken = extractAccessToken(authHeader)

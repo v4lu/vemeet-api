@@ -11,8 +11,6 @@ import com.vemeet.backend.exception.NotAllowedException
 import com.vemeet.backend.exception.ResourceNotFoundException
 import com.vemeet.backend.model.Image
 import com.vemeet.backend.repository.ImageRepository
-import org.slf4j.LoggerFactory
-import org.springframework.dao.DataIntegrityViolationException
 
 @Service
 class UserService(
@@ -20,7 +18,6 @@ class UserService(
     private val userCache: UserCache,
     private val imageRepository: ImageRepository
 ) {
-    private val logger = LoggerFactory.getLogger(UserService::class.java)
 
     fun getSessionUser(accessToken: String): User {
         return userCache.getUserSession(accessToken)
@@ -37,16 +34,15 @@ class UserService(
                 if (existingUser != null && existingUser.id != user.id) {
                     throw ConflictException("Username already exists")
                 }
+                user.username = newUsername
             }
-            user.username = newUsername
         }
-
 
         userUpdateRequest.bio?.let { user.bio = it }
         userUpdateRequest.name?.let { user.name = it }
-        userUpdateRequest.gender?.let { user.gender = it }
         userUpdateRequest.birthplaceLat?.let { user.birthplaceLat = it }
         userUpdateRequest.birthplaceLng?.let { user.birthplaceLng = it }
+        userUpdateRequest.gender?.let { user.gender = it }
         userUpdateRequest.birthplaceName?.let { user.birthplaceName = it }
         userUpdateRequest.residenceLat?.let { user.residenceLat = it }
         userUpdateRequest.residenceLng?.let { user.residenceLng = it }
@@ -56,38 +52,23 @@ class UserService(
 
         when {
             userUpdateRequest.newImageUrl != null -> {
-                logger.info("Attempting to set new profile image URL: ${userUpdateRequest.newImageUrl}")
-                try {
-                    val newImage = Image(url = userUpdateRequest.newImageUrl, user = user)
-                    val savedImage = imageRepository.save(newImage)
-                    user.profileImage = savedImage
-                } catch (e: Exception) {
-                    logger.error("Error saving new image: ${e.message}", e)
-                    throw e
-                }
+                val newImage = Image(url = userUpdateRequest.newImageUrl, user = user)
+                imageRepository.save(newImage)
+                user.profileImage = newImage
             }
             userUpdateRequest.existingImageId != null -> {
                 val existingImage = imageRepository.findById(userUpdateRequest.existingImageId)
                     .orElseThrow { ResourceNotFoundException("Image not found") }
                 if (existingImage.user?.id != user.id) {
-                    throw NotAllowedException("You don't have permission to use this image")
+                    throw NotAllowedException("You can only use your own images as profile picture")
                 }
                 user.profileImage = existingImage
             }
         }
 
-        try {
-            val updatedUser = userRepository.save(user)
-            userCache.cacheUserSession(accessToken, 3600, updatedUser) // 1h
-            return updatedUser
-        } catch (e: DataIntegrityViolationException) {
-            if (e.cause?.cause?.message?.contains("users_username_key") == true) {
-                throw ConflictException("Username already exists")
-            }
-            throw e
-        } catch (e: Exception) {
-            logger.error("Error saving new user: ${e.message}", e)
-            throw e
-        }
+        val updatedUser = userRepository.save(user)
+        userCache.deleteUserSession(accessToken)
+        userCache.cacheUserSession(accessToken, 3600, updatedUser) // 1h
+        return updatedUser
     }
 }

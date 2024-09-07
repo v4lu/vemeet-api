@@ -1,5 +1,7 @@
 package com.vemeet.backend.dto
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties
+import com.fasterxml.jackson.annotation.JsonProperty
 import com.vemeet.backend.model.VeganLocation
 import io.swagger.v3.oas.annotations.media.Schema
 import java.time.format.DateTimeFormatter
@@ -119,4 +121,44 @@ data class VeganLocationRequest(
 
     @Schema(description = "Price range", example = "$$")
     val priceRange: String?
+)
+
+
+@Schema(description = "Vegan Location Update Request object")
+data class VeganLocationUpdateRequest(
+    @Schema(description = "Location name", example = "Green Cafe")
+    val name: String? = null,
+
+    @Schema(description = "Location description", example = "A cozy vegan cafe with a variety of plant-based options")
+    val description: String? = null,
+
+    @Schema(description = "Full address", example = "123 Green St, Veganville")
+    val address: String? = null,
+
+    @Schema(description = "City", example = "Veganville")
+    val city: String? = null,
+
+    @Schema(description = "Country", example = "Veganland")
+    val country: String? = null,
+
+    @Schema(description = "Latitude", example = "40.7128")
+    val latitude: Double? = null,
+
+    @Schema(description = "Longitude", example = "-74.0060")
+    val longitude: Double? = null,
+
+    @Schema(description = "Location type", example = "RESTAURANT")
+    val type: String? = null,
+
+    @Schema(description = "Website URL", example = "https://www.greencafe.com")
+    val websiteUrl: String? = null,
+
+    @Schema(description = "Phone number", example = "+1234567890")
+    val phoneNumber: String? = null,
+
+    @Schema(description = "Opening hours", example = "Mon-Fri: 9AM-9PM, Sat-Sun: 10AM-8PM")
+    val openingHours: String? = null,
+
+    @Schema(description = "Price range", example = "$$")
+    val priceRange: String? = null
 )
