@@ -42,7 +42,7 @@ aws:
   s3BucketName: ${AWS_S3_BUCKET}
 
 server:
-  port: 8080
+  port: ${PORT}
 
 # Swagger
 springdoc:
