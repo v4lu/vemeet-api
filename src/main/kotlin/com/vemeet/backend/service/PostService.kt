@@ -11,6 +11,7 @@ import com.vemeet.backend.model.PostImage
 import com.vemeet.backend.model.Reaction
 import com.vemeet.backend.model.User
 import com.vemeet.backend.repository.*
+import org.apache.coyote.BadRequestException
 import org.springframework.data.domain.Page
 import org.springframework.data.domain.Pageable
 import org.springframework.stereotype.Service
@@ -50,17 +51,29 @@ class PostService(
 
     @Transactional
     fun createPost(currentUser: User, request: PostCreateRequest): PostResponse {
-        val images = imageRepository.findAllById(request.imageIds)
-            .filter { it.user?.id == currentUser.id }
+        if (!request.isValid()) {
+            throw BadRequestException("Post must have either content or images")
+        }
+
+        val images = request.imageIds?.let { ids ->
+            imageRepository.findAllById(ids)
+                .filter { it.user?.id == currentUser.id }
+        } ?: emptyList()
 
         val post = Post(
             user = currentUser,
             content = request.content,
-            images = images.mapIndexed { index, image ->
-                PostImage(image = image, orderIndex = index)
-            }.toMutableList()
         )
 
+        val postImages = images.mapIndexed { index, image ->
+            PostImage(
+                post = post,
+                image = image,
+                orderIndex = index
+            )
+        }
+
+        post.images.addAll(postImages)
         val savedPost = postRepository.save(post)
         return PostResponse.fromPost(savedPost)
     }
@@ -75,14 +88,7 @@ class PostService(
         }
 
         request.content?.let { post.content = it }
-        request.imageIds?.let {
-            val newImages = imageRepository.findAllById(it)
-                .filter { image -> image.user?.id == currentUser.id }
-            post.images.clear()
-            post.images.addAll(newImages.mapIndexed { index, image ->
-                PostImage(image = image, orderIndex = index)
-            })
-        }
+
 
         post.updatedAt = Instant.now()
         val updatedPost = postRepository.save(post)
@@ -111,6 +117,10 @@ class PostService(
 
         if (postOwner.isPrivate && postOwner.id != currentUser.id && !isFollowing(currentUser, postOwner)) {
             throw NotAllowedException("You don't have permission to react to this post")
+        }
+
+        if(request.reactionType != "LIKE") {
+            throw BadRequestException("Currently we support only likes")
         }
 
         val existingReaction = reactionRepository.findByPostIdAndUserId(postId, currentUser.id)

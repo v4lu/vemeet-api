@@ -10,6 +10,7 @@ import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.tags.Tag
+import jakarta.validation.Valid
 
 @RestController
 @RequestMapping("/v1/images")
@@ -36,7 +37,8 @@ class ImageController(
     @PostMapping
     @Operation(summary = "Upload one or more images")
     fun uploadImages(
-        @RequestBody uploadRequests: List<ImageUploadRequest>,
+        @Valid @RequestBody uploadRequests: List<ImageUploadRequest> ,
+
         @RequestHeader("Authorization") authHeader: String
     ): ResponseEntity<ImageUploadResponse> {
         val accessToken = extractAccessToken(authHeader)

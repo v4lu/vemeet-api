@@ -3,6 +3,7 @@ package com.vemeet.backend.dto
 import com.vemeet.backend.model.Post
 import com.vemeet.backend.model.Reaction
 import io.swagger.v3.oas.annotations.media.Schema
+import jakarta.validation.constraints.Size
 import java.time.format.DateTimeFormatter
 
 @Schema(description = "Post Response object")
@@ -49,20 +50,22 @@ data class PostResponse(
 
 @Schema(description = "Post Creation Request object")
 data class PostCreateRequest(
+    @field:Size(max = 1000, message = "Content must not exceed 1000 characters")
     @Schema(description = "Post content", example = "This is my first post!")
-    val content: String?,
+    val content: String? = null,
 
+    @field:Size(max = 10, message = "Cannot upload more than 10 images")
     @Schema(description = "List of image IDs to associate with the post")
-    val imageIds: List<Long>
-)
+    val imageIds: List<Long>? = null
+) {
+    fun isValid(): Boolean = !content.isNullOrBlank() || !imageIds.isNullOrEmpty()
+}
 
 @Schema(description = "Post Update Request object")
 data class PostUpdateRequest(
     @Schema(description = "Post content", example = "Updated content for my first post!")
+    @field:Size(max = 1000, message = "Content must not exceed 1000 characters")
     val content: String?,
-
-    @Schema(description = "List of image IDs to associate with the post")
-    val imageIds: List<Long>?
 )
 
 @Schema(description = "Reaction Response object")

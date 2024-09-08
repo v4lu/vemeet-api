@@ -2,6 +2,7 @@ package com.vemeet.backend.dto
 
 import com.vemeet.backend.model.Image
 import io.swagger.v3.oas.annotations.media.Schema
+import org.hibernate.validator.constraints.URL
 import java.time.Instant
 import java.time.format.DateTimeFormatter
 
@@ -32,11 +33,12 @@ data class ImageResponse(
 @Schema(description = "Image upload request")
 data class ImageUploadRequest(
     @Schema(description = "Image URL", example = "https://example.com/image.jpg", required = true)
+    @field:URL(message = "Provide valid url")
     val url: String
 )
 
 @Schema(description = "Image upload response")
 data class ImageUploadResponse(
     @Schema(description = "List of uploaded image IDs", example = "[1, 2, 3]")
-    val imageIds: List<ImageResponse>
+    val images: List<ImageResponse>
 )

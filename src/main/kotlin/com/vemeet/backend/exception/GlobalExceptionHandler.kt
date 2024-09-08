@@ -2,9 +2,11 @@ package com.vemeet.backend.exception
 
 import com.vemeet.backend.dto.ExceptionResponse
 import com.vemeet.backend.dto.FieldException
+import org.apache.coyote.BadRequestException
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.security.authentication.BadCredentialsException
+import org.springframework.web.ErrorResponse
 import org.springframework.web.HttpRequestMethodNotSupportedException
 import org.springframework.web.bind.MethodArgumentNotValidException
 import org.springframework.web.bind.annotation.ControllerAdvice
@@ -14,6 +16,26 @@ import org.springframework.web.servlet.NoHandlerFoundException
 
 @ControllerAdvice
 class GlobalExceptionHandler {
+
+    @ExceptionHandler(BadRequestException::class)
+    fun handleBadRequestException(ex: BadRequestException): ResponseEntity<ExceptionResponse> {
+        val errorResponse = ExceptionResponse(
+            statusCode = HttpStatus.BAD_REQUEST.value(),
+            message = ex.message,
+        )
+
+        return ResponseEntity(errorResponse, HttpStatus.BAD_REQUEST)
+    }
+
+    @ExceptionHandler(IllegalArgumentException::class)
+    fun handleIllegalArgumentException(ex: IllegalArgumentException): ResponseEntity<ExceptionResponse> {
+        val errorResponse = ExceptionResponse(
+            statusCode = HttpStatus.BAD_REQUEST.value(),
+            message = ex.message,
+        )
+
+        return ResponseEntity(errorResponse, HttpStatus.BAD_REQUEST)
+    }
 
     @ExceptionHandler(Exception::class)
     fun handleAllUncaughtException(ex: Exception, request: WebRequest): ResponseEntity<ExceptionResponse> {

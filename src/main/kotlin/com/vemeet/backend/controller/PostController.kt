@@ -75,11 +75,23 @@ class PostController(
         summary = "Create a new post",
         responses = [
             ApiResponse(
-                responseCode = "200", description = "Successfully created post",
+                responseCode = "201",
+                description = "Successfully created post",
                 content = [Content(schema = Schema(implementation = PostResponse::class))]
             ),
             ApiResponse(
-                responseCode = "400", description = "Invalid request",
+                responseCode = "400",
+                description = "Bad request - Post must have either content or images",
+                content = [Content(schema = Schema(implementation = ExceptionResponse::class))]
+            ),
+            ApiResponse(
+                responseCode = "401",
+                description = "Unauthorized - Invalid or missing authentication token",
+                content = [Content(schema = Schema(implementation = ExceptionResponse::class))]
+            ),
+            ApiResponse(
+                responseCode = "422",
+                description = "Unprocessable Entity - Validation errors",
                 content = [Content(schema = Schema(implementation = ExceptionResponse::class))]
             )
         ]
@@ -94,7 +106,7 @@ class PostController(
         return ResponseEntity.ok(createdPost)
     }
 
-    @PutMapping("/{postId}")
+    @PatchMapping("/{postId}")
     @Operation(
         summary = "Update a post",
         responses = [
@@ -158,6 +170,10 @@ class PostController(
             ),
             ApiResponse(
                 responseCode = "404", description = "Post not found",
+                content = [Content(schema = Schema(implementation = ExceptionResponse::class))]
+            ),
+            ApiResponse(
+                responseCode = "400", description = "Currently only likes are allowed",
                 content = [Content(schema = Schema(implementation = ExceptionResponse::class))]
             ),
             ApiResponse(
