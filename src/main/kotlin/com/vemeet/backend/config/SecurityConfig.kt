@@ -33,6 +33,7 @@ class SecurityConfig(
                         "/v1/auth/verification-email/resend"
                     ).permitAll()
                     .requestMatchers("/swagger-ui/**", "/swagger-ui.html", "/v3/api-docs/**").permitAll()
+                    .requestMatchers("/hello/**").permitAll()
                     .anyRequest().authenticated()
             }
             .oauth2ResourceServer { oauth2 ->
