@@ -3,6 +3,8 @@ package com.vemeet.backend.dto
 import com.vemeet.backend.model.Comment
 import com.vemeet.backend.model.CommentReaction
 import io.swagger.v3.oas.annotations.media.Schema
+import jakarta.validation.constraints.Max
+import jakarta.validation.constraints.Min
 import java.time.format.DateTimeFormatter
 
 
@@ -82,12 +84,16 @@ data class CommentReactionCreateRequest(
 
 @Schema(description = "Comment Update Request object")
 data class CommentUpdateRequest(
+    @field:Min(2, message = "At least 2 characters should be provided")
+    @field:Max(1000, message = "No more then 1000 characters should be provided")
     @Schema(description = "Updated comment content", example = "Updated: Great post!", required = true)
     val content: String
 )
 
 @Schema(description = "Comment Create Request object")
 data class CommentCreateRequest(
+    @field:Min(2, message = "At least 2 characters should be provided")
+    @field:Max(1000, message = "No more then 1000 characters should be provided")
     @Schema(description = "Comment content", example = "Great post!", required = true)
     val content: String,
 

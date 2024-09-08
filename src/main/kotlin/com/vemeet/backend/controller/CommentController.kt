@@ -50,7 +50,7 @@ class CommentController(
         return ResponseEntity.ok(comment)
     }
 
-    @GetMapping("/comments/{commentId}")
+    @GetMapping("/{commentId}")
     @Operation(summary = "Get a comment by ID")
     @ApiResponse(responseCode = "200", description = "Comment retrieved successfully",
         content = [Content(schema = Schema(implementation = CommentResponse::class))])
@@ -59,7 +59,7 @@ class CommentController(
         return ResponseEntity.ok(comment)
     }
 
-    @PutMapping("/comments/{commentId}")
+    @PatchMapping("/{commentId}")
     @Operation(summary = "Update a comment")
     @ApiResponse(responseCode = "200", description = "Comment updated successfully",
         content = [Content(schema = Schema(implementation = CommentResponse::class))])
@@ -73,7 +73,7 @@ class CommentController(
         return ResponseEntity.ok(updatedComment)
     }
 
-    @DeleteMapping("/comments/{commentId}")
+    @DeleteMapping("/{commentId}")
     @Operation(summary = "Delete a comment")
     @ApiResponse(responseCode = "204", description = "Comment deleted successfully")
     fun deleteComment(
@@ -85,7 +85,7 @@ class CommentController(
         return ResponseEntity.noContent().build()
     }
 
-    @PostMapping("/comments/{commentId}/reactions")
+    @PostMapping("/{commentId}/reactions")
     @Operation(summary = "Add a reaction to a comment")
     @ApiResponse(responseCode = "200", description = "Reaction added successfully",
         content = [Content(schema = Schema(implementation = CommentResponse::class))])
@@ -99,7 +99,7 @@ class CommentController(
         return ResponseEntity.ok(updatedComment)
     }
 
-    @DeleteMapping("/comments/{commentId}/reactions")
+    @DeleteMapping("/{commentId}/reactions")
     @Operation(summary = "Remove a reaction from a comment")
     @ApiResponse(responseCode = "200", description = "Reaction removed successfully",
         content = [Content(schema = Schema(implementation = CommentResponse::class))])

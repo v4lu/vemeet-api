@@ -11,6 +11,7 @@ import com.vemeet.backend.repository.CommentReactionRepository
 import com.vemeet.backend.repository.CommentRepository
 import com.vemeet.backend.repository.PostRepository
 import com.vemeet.backend.repository.RecipeRepository
+import org.apache.coyote.BadRequestException
 
 @Service
 class CommentService(
@@ -22,16 +23,45 @@ class CommentService(
 
     @Transactional
     fun createComment(user: User, postId: Long?, recipeId: Long?, request: CommentCreateRequest): CommentResponse {
+        if (postId == null && recipeId == null && request.parentId == null) {
+            throw IllegalArgumentException("Either postId, recipeId, or parentId must be provided")
+        }
+
         val comment = Comment(
             user = user,
-            content = request.content,
-            post = postId?.let { postRepository.findById(it).orElseThrow { ResourceNotFoundException("Post not found") } },
-            recipe = recipeId?.let { recipeRepository.findById(it).orElseThrow { ResourceNotFoundException("Recipe not found") } },
-            parent = request.parentId?.let { commentRepository.findById(it).orElseThrow { ResourceNotFoundException("Parent comment not found") } }
+            content = request.content
         )
+
+        when {
+            request.parentId != null -> {
+                val parentComment = commentRepository.findById(request.parentId)
+                    .orElseThrow { ResourceNotFoundException("Parent comment not found") }
+
+                // For sub-comments, we only set the parent
+                comment.parent = parentComment
+
+                // Validate that the parent comment belongs to the specified post or recipe, if provided
+                when {
+                    postId != null && parentComment.post?.id != postId ->
+                        throw IllegalArgumentException("Parent comment does not belong to the specified post")
+                    recipeId != null && parentComment.recipe?.id != recipeId ->
+                        throw IllegalArgumentException("Parent comment does not belong to the specified recipe")
+                }
+            }
+            postId != null -> {
+                comment.post = postRepository.findById(postId)
+                    .orElseThrow { ResourceNotFoundException("Post not found") }
+            }
+            recipeId != null -> {
+                comment.recipe = recipeRepository.findById(recipeId)
+                    .orElseThrow { ResourceNotFoundException("Recipe not found") }
+            }
+        }
+
         val savedComment = commentRepository.save(comment)
         return CommentResponse.fromComment(savedComment)
     }
+
 
     @Transactional(readOnly = true)
     fun getComment(id: Long): CommentResponse {
@@ -63,7 +93,12 @@ class CommentService(
     fun addReaction(commentId: Long, user: User, request: CommentReactionCreateRequest): CommentResponse {
         val comment = commentRepository.findById(commentId).orElseThrow { ResourceNotFoundException("Comment not found") }
         val existingReaction = commentReactionRepository.findByCommentIdAndUserId(commentId, user.id)
+
         if (existingReaction != null) {
+            if(request.reactionType != "LIKE") {
+                throw BadRequestException("Currently we support only likes")
+            }
+
             existingReaction.reactionType = request.reactionType
             commentReactionRepository.save(existingReaction)
         } else {
