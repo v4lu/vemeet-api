@@ -36,6 +36,7 @@ dependencies {
 	implementation("org.flywaydb:flyway-core:9.22.3")
 	implementation("org.postgresql:postgresql:42.7.2")
 	implementation("com.vladmihalcea:hibernate-types-60:2.21.1")
+	"developmentOnly"("org.springframework.boot:spring-boot-devtools")
 
 	runtimeOnly("org.postgresql:postgresql")
 

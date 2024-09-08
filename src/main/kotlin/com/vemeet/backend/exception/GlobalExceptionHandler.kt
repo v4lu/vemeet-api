@@ -17,6 +17,17 @@ import org.springframework.web.servlet.NoHandlerFoundException
 @ControllerAdvice
 class GlobalExceptionHandler {
 
+    @ExceptionHandler(IllegalStateException::class)
+    fun handleIllegalStateException(ex: IllegalStateException): ResponseEntity<ExceptionResponse> {
+        val errorResponse = ExceptionResponse(
+            statusCode = HttpStatus.CONFLICT.value(),
+            message = ex.message,
+        )
+
+        return ResponseEntity(errorResponse, HttpStatus.CONFLICT)
+    }
+
+
     @ExceptionHandler(BadRequestException::class)
     fun handleBadRequestException(ex: BadRequestException): ResponseEntity<ExceptionResponse> {
         val errorResponse = ExceptionResponse(

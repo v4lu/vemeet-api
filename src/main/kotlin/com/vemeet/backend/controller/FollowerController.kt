@@ -2,6 +2,8 @@ package com.vemeet.backend.controller
 
 import com.vemeet.backend.dto.*
 import com.vemeet.backend.service.FollowerService
+import com.vemeet.backend.service.UserService
+import com.vemeet.backend.utils.extractAccessToken
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.Parameter
 import io.swagger.v3.oas.annotations.media.Content
@@ -14,23 +16,36 @@ import org.springframework.web.bind.annotation.*
 @RestController
 @RequestMapping("/v1/followers")
 @Tag(name = "Follower", description = "Follower management APIs")
-class FollowerController(private val followerService: FollowerService) {
+class FollowerController(
+    private val followerService: FollowerService,
+    private val userService: UserService,
+) {
 
-    @PostMapping("/follow")
+    @PostMapping("/follow/{followId}")
     @ResponseStatus(HttpStatus.CREATED)
     @Operation(summary = "Follow a user", description = "Creates a new follower relationship")
     @ApiResponse(responseCode = "201", description = "Successfully followed the user",
         content = [Content(schema = Schema(implementation = MessageFollowResponse::class))])
-    fun followUser(@RequestBody followRequest: FollowRequest): MessageFollowResponse {
-        return followerService.followUser(followRequest.followerId, followRequest.followedId)
+    fun followUser(
+        @PathVariable followId: Long,
+        @RequestHeader("Authorization") authHeader: String,
+        ): MessageFollowResponse {
+        val accessToken = extractAccessToken(authHeader)
+        val user = userService.getSessionUser(accessToken)
+        return followerService.followUser(user, followId)
     }
 
-    @DeleteMapping("/unfollow")
+    @DeleteMapping("/unfollow/{unfollowId}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     @Operation(summary = "Unfollow a user", description = "Removes an existing follower relationship")
     @ApiResponse(responseCode = "204", description = "Successfully unfollowed the user")
-    fun unfollowUser(@RequestBody followRequest: FollowRequest) {
-        followerService.unfollowUser(followRequest.followerId, followRequest.followedId)
+    fun unfollowUser(
+        @PathVariable unfollowId: Long,
+        @RequestHeader("Authorization") authHeader: String,
+    ) {
+        val accessToken = extractAccessToken(authHeader)
+        val user = userService.getSessionUser(accessToken)
+        followerService.unfollowUser(user, unfollowId)
     }
 
     @GetMapping("/followers/{userId}")
@@ -42,7 +57,7 @@ class FollowerController(private val followerService: FollowerService) {
     }
 
     @GetMapping("/following/{userId}")
-    @Operation(summary = "Get users followed by a user", description = "Retrieves a list of users followed by the specified user")
+    @Operation(summary = "Get who user follow", description = "Retrieves a list of users followed by the specified user")
     @ApiResponse(responseCode = "200", description = "Successfully retrieved the list of followed users",
         content = [Content(schema = Schema(implementation = UserResponse::class))])
     fun getUserFollowing(@Parameter(description = "ID of the user") @PathVariable userId: Long): List<UserResponse> {
@@ -61,24 +76,38 @@ class FollowerController(private val followerService: FollowerService) {
     @ResponseStatus(HttpStatus.OK)
     @Operation(summary = "Accept a follow request", description = "Accepts a pending follow request")
     @ApiResponse(responseCode = "200", description = "Successfully accepted the follow request")
-    fun acceptFollowRequest(@PathVariable requestId: Long, @RequestParam userId: Long) {
-        followerService.acceptFollowRequest(requestId, userId)
+    fun acceptFollowRequest(
+        @PathVariable requestId: Long,
+        @RequestHeader("Authorization") authHeader: String,
+        ) {
+        val accessToken = extractAccessToken(authHeader)
+        val user = userService.getSessionUser(accessToken)
+        followerService.acceptFollowRequest(requestId, user)
     }
 
     @PostMapping("/reject-request/{requestId}")
     @ResponseStatus(HttpStatus.OK)
     @Operation(summary = "Reject a follow request", description = "Rejects a pending follow request")
     @ApiResponse(responseCode = "200", description = "Successfully rejected the follow request")
-    fun rejectFollowRequest(@PathVariable requestId: Long, @RequestParam userId: Long) {
-        followerService.rejectFollowRequest(requestId, userId)
+    fun rejectFollowRequest(
+        @PathVariable requestId: Long,
+        @RequestHeader("Authorization") authHeader: String,
+        ) {
+        val accessToken = extractAccessToken(authHeader)
+        val user = userService.getSessionUser(accessToken)
+        followerService.rejectFollowRequest(requestId, user.id)
     }
 
     @GetMapping("/pending-requests")
     @Operation(summary = "Get pending follow requests", description = "Retrieves a list of pending follow requests for the user")
     @ApiResponse(responseCode = "200", description = "Successfully retrieved the list of pending follow requests",
         content = [Content(schema = Schema(implementation = FollowRequestResponse::class))])
-    fun getPendingFollowRequests(@RequestParam userId: Long): List<FollowRequestResponse> {
-        return followerService.getPendingFollowRequests(userId)
+    fun getPendingFollowRequests(
+        @RequestHeader("Authorization") authHeader: String,
+    ): List<FollowRequestResponse> {
+        val accessToken = extractAccessToken(authHeader)
+        val user = userService.getSessionUser(accessToken)
+        return followerService.getPendingFollowRequests(user.id)
     }
 }
 

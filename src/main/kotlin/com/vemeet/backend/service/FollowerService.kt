@@ -2,8 +2,10 @@ package com.vemeet.backend.service
 
 
 import com.vemeet.backend.dto.*
+import com.vemeet.backend.exception.ResourceNotFoundException
 import com.vemeet.backend.model.FollowRequest
 import com.vemeet.backend.model.Follower
+import com.vemeet.backend.model.User
 import com.vemeet.backend.repository.FollowRequestRepository
 import com.vemeet.backend.repository.FollowerRepository
 import com.vemeet.backend.repository.UserRepository
@@ -19,45 +21,44 @@ class FollowerService(
 ) {
 
     @Transactional
-    fun followUser(followerId: Long, followedId: Long): MessageFollowResponse {
-        if (followerId == followedId) {
+    fun followUser(user: User , followId: Long): MessageFollowResponse {
+        if (user.id == followId) {
             throw IllegalArgumentException("A user cannot follow themselves")
         }
 
-        val follower = userRepository.findById(followerId).orElseThrow { NoSuchElementException("Follower not found") }
-        val followed = userRepository.findById(followedId).orElseThrow { NoSuchElementException("Followed user not found") }
+        val followed = userRepository.findById(followId).orElseThrow { NoSuchElementException("Followed user not found") }
 
         if (followed.isPrivate) {
-            val existingRequest = followRequestRepository.findByRequesterIdAndTargetId(followerId, followedId)
+            val existingRequest = followRequestRepository.findByRequesterIdAndTargetId(user.id, followId)
             if (existingRequest != null) {
                 throw IllegalStateException("Follow request already sent")
             }
 
-            val newRequest = FollowRequest(requester = follower, target = followed)
+            val newRequest = FollowRequest(requester = user, target = followed)
             val savedRequest = followRequestRepository.save(newRequest)
 
             return MessageFollowResponse(
-                message = "Requested follow for ${savedRequest.target}"
+                message = "Requested follow for ${savedRequest.target.username}"
             )
         } else {
-            val existingFollower = followerRepository.findByFollowerIdAndFollowedId(followerId, followedId)
+            val existingFollower = followerRepository.findByFollowerIdAndFollowedId(user.id, followId)
             if (existingFollower != null) {
                 throw IllegalStateException("Already following this user")
             }
 
-            val newFollower = Follower(follower = follower, followed = followed)
+            val newFollower = Follower(follower = user, followed = followed)
             val savedFollower = followerRepository.save(newFollower)
 
             return MessageFollowResponse(
-                message = "Followed ${savedFollower.follower}"
+                message = "Followed ${savedFollower.followed.username}"
             )
         }
     }
 
     @Transactional
-    fun unfollowUser(followerId: Long, followedId: Long) {
-        val follower = followerRepository.findByFollowerIdAndFollowedId(followerId, followedId)
-            ?: throw NoSuchElementException("Follower relationship not found")
+    fun unfollowUser(user: User, unfollowId: Long) {
+        val follower = followerRepository.findByFollowerIdAndFollowedId(user.id, unfollowId)
+            ?: throw ResourceNotFoundException("Follower relationship not found")
         followerRepository.delete(follower)
     }
 
@@ -83,11 +84,11 @@ class FollowerService(
 
 
     @Transactional
-    fun acceptFollowRequest(requestId: Long, userId: Long) {
+    fun acceptFollowRequest(requestId: Long, user: User) {
         val request = followRequestRepository.findById(requestId)
             .orElseThrow { NoSuchElementException("Follow request not found") }
 
-        if (request.target.id != userId) {
+        if (request.target.id != user.id) {
             throw IllegalArgumentException("User is not authorized to accept this request")
         }
 
