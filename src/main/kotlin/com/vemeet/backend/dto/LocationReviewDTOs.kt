@@ -1,10 +1,10 @@
 package com.vemeet.backend.dto
 
-import com.vemeet.backend.model.LocationImage
 import com.vemeet.backend.model.LocationReview
 import com.vemeet.backend.model.ReviewImage
 import io.swagger.v3.oas.annotations.media.Schema
-import java.time.Instant
+import jakarta.validation.constraints.Max
+import jakarta.validation.constraints.Min
 import java.time.format.DateTimeFormatter
 
 @Schema(description = "Location Review Response object")
@@ -63,6 +63,9 @@ data class ReviewImageResponse(
 @Schema(description = "Location Review Request object")
 data class LocationReviewRequest(
     @Schema(description = "Rating", example = "4")
+    @field:Schema(description = "Rating", example = "4", required = true, minimum = "1", maximum = "5")
+    @field:Min(value = 1, message = "Rating must be at least 1")
+    @field:Max(value = 5, message = "Rating must be at most 5")
     val rating: Int,
 
     @Schema(description = "Review comment", example = "Great vegan options and friendly staff!")
@@ -74,7 +77,9 @@ data class LocationReviewRequest(
 
 @Schema(description = "Location Review Update Request object")
 data class LocationReviewUpdateRequest(
-    @Schema(description = "Rating", example = "4")
+    @field:Schema(description = "Rating", example = "4", required = false, minimum = "1", maximum = "5")
+    @field:Min(value = 1, message = "Rating must be at least 1")
+    @field:Max(value = 5, message = "Rating must be at most 5")
     val rating: Int?,
 
     @Schema(description = "Review comment", example = "Great vegan options and friendly staff!")

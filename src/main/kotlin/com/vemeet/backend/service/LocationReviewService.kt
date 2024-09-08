@@ -62,7 +62,11 @@ class LocationReviewService(
         }
 
         review.apply {
-            request.rating?.let { rating = it }
+            request.rating.let {
+                if (it != null) {
+                    rating = it
+                }
+            }
             request.comment?.let { comment = it }
             updatedAt = Instant.now()
         }

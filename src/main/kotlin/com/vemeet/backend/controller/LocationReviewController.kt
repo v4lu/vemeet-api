@@ -12,6 +12,7 @@ import io.swagger.v3.oas.annotations.media.Content
 import io.swagger.v3.oas.annotations.media.Schema
 import io.swagger.v3.oas.annotations.responses.ApiResponse
 import io.swagger.v3.oas.annotations.tags.Tag
+import jakarta.validation.Valid
 import org.springframework.data.domain.Page
 import org.springframework.data.domain.Pageable
 import org.springframework.http.ResponseEntity
@@ -74,7 +75,7 @@ class LocationReviewController(
     )
     fun createReview(
         @PathVariable locationId: Long,
-        @RequestBody request: LocationReviewRequest,
+        @Valid @RequestBody request: LocationReviewRequest,
         @RequestHeader("Authorization") authHeader: String
     ): ResponseEntity<LocationReviewResponse> {
         val token = extractAccessToken(authHeader)
@@ -83,7 +84,7 @@ class LocationReviewController(
         return ResponseEntity.ok(review)
     }
 
-    @PutMapping("/{reviewId}")
+    @PatchMapping("/{reviewId}")
     @Operation(
         summary = "Update a review",
         description = "Update an existing review",
@@ -113,7 +114,7 @@ class LocationReviewController(
     fun updateReview(
         @PathVariable locationId: Long,
         @PathVariable reviewId: Long,
-        @RequestBody request: LocationReviewUpdateRequest,
+        @Valid @RequestBody request: LocationReviewUpdateRequest,
         @RequestHeader("Authorization") authHeader: String
     ): ResponseEntity<LocationReviewResponse> {
         val token = extractAccessToken(authHeader)

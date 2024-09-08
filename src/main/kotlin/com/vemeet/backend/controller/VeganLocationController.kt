@@ -10,6 +10,7 @@ import io.swagger.v3.oas.annotations.media.Content
 import io.swagger.v3.oas.annotations.media.Schema
 import io.swagger.v3.oas.annotations.responses.ApiResponse
 import io.swagger.v3.oas.annotations.tags.Tag
+import jakarta.validation.Valid
 import org.springframework.data.domain.Page
 import org.springframework.data.domain.Pageable
 import org.springframework.http.ResponseEntity
@@ -32,6 +33,10 @@ class VeganLocationController(
             ),
             ApiResponse(
                 responseCode = "404", description = "Location not found",
+                content = [Content(schema = Schema(implementation = ExceptionResponse::class))]
+            ),
+            ApiResponse(
+                responseCode = "422", description = "Location missing some fields or they are not valid, it shows errors too",
                 content = [Content(schema = Schema(implementation = ExceptionResponse::class))]
             )
         ]
@@ -58,6 +63,10 @@ class VeganLocationController(
             ApiResponse(
                 responseCode = "200", description = "Successfully retrieved locations",
                 content = [Content(schema = Schema(implementation = Page::class))]
+            ),
+            ApiResponse(
+                responseCode = "422", description = "Location missing some fields or they are not valid, it shows errors too",
+                content = [Content(schema = Schema(implementation = ExceptionResponse::class))]
             )
         ]
     )
@@ -84,7 +93,7 @@ class VeganLocationController(
         ]
     )
     fun createLocation(
-        @RequestBody request: VeganLocationRequest,
+        @Valid @RequestBody request: VeganLocationRequest,
         @RequestHeader("Authorization") authHeader: String
     ): ResponseEntity<VeganLocationResponse> {
         val accessToken = extractAccessToken(authHeader)
@@ -113,7 +122,7 @@ class VeganLocationController(
     )
     fun updateLocation(
         @PathVariable id: Long,
-        @RequestBody request: VeganLocationUpdateRequest,
+        @Valid @RequestBody request: VeganLocationUpdateRequest,
         @RequestHeader("Authorization") authHeader: String
     ): ResponseEntity<VeganLocationResponse> {
         val accessToken = extractAccessToken(authHeader)
