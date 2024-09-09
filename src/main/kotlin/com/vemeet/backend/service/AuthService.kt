@@ -10,8 +10,12 @@ import com.vemeet.backend.model.User
 import com.vemeet.backend.repository.UserRepository
 import com.vemeet.backend.security.CognitoService
 import jakarta.transaction.Transactional
+import org.springframework.http.HttpHeaders
+import org.springframework.http.ResponseCookie
+import org.springframework.http.ResponseEntity
 import org.springframework.security.authentication.BadCredentialsException
 import org.springframework.stereotype.Service
+import java.time.Duration
 import java.time.Instant
 import java.time.temporal.ChronoUnit
 
@@ -46,7 +50,7 @@ class AuthService(
         )
     }
 
-    fun login(logReq : LoginRequest): LoginResponse {
+    fun login(logReq : LoginRequest): ResponseEntity<LoginResponse> {
         val authResult = try {
             cognitoService.initiateAuth(logReq.email, logReq.password)
         } catch (e: Exception) {
@@ -71,13 +75,24 @@ class AuthService(
         val now = Instant.now()
         val thirtyDaysLater = now.plus(30, ChronoUnit.DAYS)
         val accessTokenExpiry =  now.plusSeconds(authResult.authenticationResult.expiresIn.toLong())
-        return LoginResponse(
+        val loginResponse = LoginResponse(
             cognitoId = cognitoId,
             refreshToken = authResult.authenticationResult.refreshToken,
             refreshTokenExpiry = thirtyDaysLater,
             accessToken = authResult.authenticationResult.accessToken,
             accessTokenExpiry = accessTokenExpiry
         )
+
+        val accessTokenCookie = createSecureCookie("access_token", loginResponse.accessToken, accessTokenExpiry)
+        val refreshTokenCookie = createSecureCookie("refresh_token", loginResponse.refreshToken, thirtyDaysLater)
+        val cognitoIdCookie = createSecureCookie("cognito_id", loginResponse.cognitoId, thirtyDaysLater)
+
+        val headers = HttpHeaders()
+        headers.add(HttpHeaders.SET_COOKIE, accessTokenCookie.toString())
+        headers.add(HttpHeaders.SET_COOKIE, refreshTokenCookie.toString())
+        headers.add(HttpHeaders.SET_COOKIE, cognitoIdCookie.toString())
+
+        return ResponseEntity.ok().headers(headers).body(loginResponse)
     }
 
     @Transactional
@@ -149,5 +164,16 @@ class AuthService(
 
     fun findByUsername(username: String): User? = userRepository.findUserByUsername(username)
     fun findByAwsCognitoId(awsCognitoId: String): User? =  userRepository.findUserByAwsCognitoId(awsCognitoId)
+
+    private fun createSecureCookie(name: String, value: String, expiryDate: Instant): ResponseCookie {
+        return ResponseCookie.from(name, value)
+            .httpOnly(true)
+            .secure(true)
+            .path("/")
+            .maxAge(Duration.between(Instant.now(), expiryDate))
+            .sameSite("Strict")
+            .build()
+    }
+
 
 }
