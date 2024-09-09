@@ -74,9 +74,9 @@ class AuthService(
         return LoginResponse(
             cognitoId = cognitoId,
             refreshToken = authResult.authenticationResult.refreshToken,
-            refreshTokenExpiry = DateTimeFormatter.ISO_INSTANT.format(thirtyDaysLater),
+            refreshTokenExpiry = thirtyDaysLater,
             accessToken = authResult.authenticationResult.accessToken,
-            accessTokenExpiry = DateTimeFormatter.ISO_INSTANT.format(accessTokenExpiry)
+            accessTokenExpiry = accessTokenExpiry
         )
     }
 
@@ -105,7 +105,7 @@ class AuthService(
 
         return RefreshResponse(
             accessToken = authResult.authenticationResult.accessToken,
-            accessTokenExpiry = DateTimeFormatter.ISO_INSTANT.format(accessTokenExpiry)
+            accessTokenExpiry = accessTokenExpiry
         )
     }
 

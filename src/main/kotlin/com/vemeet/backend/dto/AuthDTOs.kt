@@ -96,13 +96,13 @@ data class LoginResponse(
     val accessToken: String,
 
     @Schema(description = "Access token expiry timestamp", example = "2024-08-27T11:30:00.000Z")
-    val accessTokenExpiry: String,
+    val accessTokenExpiry: Instant,
 
     @Schema(description = "JWT refresh token", example = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...")
     val refreshToken: String,
 
     @Schema(description = "Refresh token expiry timestamp", example = "2024-08-28T10:30:00.000Z")
-    val refreshTokenExpiry: String,
+    val refreshTokenExpiry: Instant,
 
     @Schema(description = "Aws cognito ID", example = "awsa12-3213")
     val cognitoId: String,
@@ -114,7 +114,7 @@ data class RefreshResponse(
     val accessToken: String,
 
     @Schema(description = "New access token expiry timestamp", example = "2024-08-27T12:30:00.000Z")
-    val accessTokenExpiry: String,
+    val accessTokenExpiry: Instant,
 )
 
 
