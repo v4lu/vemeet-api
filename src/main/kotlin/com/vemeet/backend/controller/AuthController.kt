@@ -14,7 +14,6 @@ import io.swagger.v3.oas.annotations.tags.Tag
 import jakarta.validation.Valid
 import org.apache.coyote.BadRequestException
 import org.slf4j.LoggerFactory
-import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.PatchMapping
@@ -109,8 +108,7 @@ class AuthController(
         ]
     )
     fun login(@Valid @RequestBody logReq: LoginRequest): ResponseEntity<LoginResponse> {
-        val logRes = authService.login(logReq)
-        return ResponseEntity(logRes, HttpStatus.OK)
+        return authService.login(logReq)
     }
 
 
