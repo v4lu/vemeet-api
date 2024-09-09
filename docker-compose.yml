@@ -7,9 +7,20 @@ services:
         - redis_vemeet_data:/data
       networks:
         - ve
+    postgres:
+      image: postgres:alpine
+      ports:
+        - "5432:5432"
+      environment:
+        - POSTGRES_USER=postgres
+        - POSTGRES_PASSWORD=postgres
+        - POSTGRES_DB=postgres
+      volumes:
+        - postgres_data:/var/lib/postgresql/data
 
 networks:
   ve:
 
 volumes:
   redis_vemeet_data:
+  postgres_data:
