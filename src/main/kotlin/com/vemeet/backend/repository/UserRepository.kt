@@ -8,4 +8,5 @@ interface UserRepository: JpaRepository<User, Long> {
     fun findUserByAwsCognitoId(id: String): User?
     fun findUserById(id: Long): User?
     fun existsByUsername(username: String): Boolean
+    fun getAllUsers(): List<User>
 }
