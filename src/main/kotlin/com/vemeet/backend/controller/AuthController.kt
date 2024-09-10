@@ -108,8 +108,7 @@ class AuthController(
         ]
     )
     fun login(@Valid @RequestBody logReq: LoginRequest): ResponseEntity<LoginResponse> {
-        val res =  authService.login(logReq)
-        return  ResponseEntity.ok(res)
+        return authService.login(logReq)
     }
 
 

@@ -10,6 +10,9 @@ import org.springframework.security.oauth2.server.resource.authentication.JwtAut
 import org.springframework.security.oauth2.server.resource.authentication.JwtGrantedAuthoritiesConverter
 import org.springframework.security.web.SecurityFilterChain
 import org.springframework.web.cors.CorsConfigurationSource
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter
+import org.springframework.security.oauth2.server.resource.web.BearerTokenResolver
+import jakarta.servlet.http.HttpServletRequest
 
 @Configuration
 @EnableWebSecurity
@@ -17,7 +20,7 @@ class SecurityConfig(
     private val customAccessDeniedHandler: CustomAccessDeniedHandler,
     private val customAuthenticationEntryPoint: CustomAuthenticationEntryPoint,
     private val corsConfigurationSource: CorsConfigurationSource
-    ) {
+) {
 
     @Bean
     fun securityFilterChain(http: HttpSecurity): SecurityFilterChain {
@@ -39,9 +42,11 @@ class SecurityConfig(
                     .anyRequest().authenticated()
             }
             .oauth2ResourceServer { oauth2 ->
-                oauth2.jwt { jwt ->
-                    jwt.jwtAuthenticationConverter(jwtAuthenticationConverter())
-                }
+                oauth2
+                    .jwt { jwt ->
+                        jwt.jwtAuthenticationConverter(jwtAuthenticationConverter())
+                    }
+                    .bearerTokenResolver(cookieBearerTokenResolver())
             }
             .exceptionHandling {
                 it.accessDeniedHandler(customAccessDeniedHandler)
@@ -60,5 +65,14 @@ class SecurityConfig(
         jwtAuthenticationConverter.setJwtGrantedAuthoritiesConverter(jwtGrantedAuthoritiesConverter)
 
         return jwtAuthenticationConverter
+    }
+
+    @Bean
+    fun cookieBearerTokenResolver(): BearerTokenResolver {
+        return BearerTokenResolver { request: HttpServletRequest ->
+            val cookieName = "access_token"
+            val cookies = request.cookies
+            cookies?.find { it.name == cookieName }?.value
+        }
     }
 }
