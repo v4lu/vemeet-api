@@ -30,7 +30,17 @@ ALTER TABLE users
 ADD CONSTRAINT fk_users_profile_image
 FOREIGN KEY (profile_image_id) REFERENCES images(id);
 
+CREATE TABLE IF NOT EXISTS followers (
+    id bigserial PRIMARY KEY,
+    follower_id bigint NOT NULL REFERENCES users(id),
+    followed_id bigint NOT NULL REFERENCES users(id),
+    created_at timestamp with time zone DEFAULT now(),
+    CONSTRAINT unique_follower_pair UNIQUE (follower_id, followed_id)
+    );
 
-CREATE INDEX idx_users_aws_cognito_id ON users (aws_cognito_id);
-CREATE INDEX idx_users_username ON users (username);
-CREATE INDEX idx_images_user_id ON images (user_id);
+CREATE INDEX IF NOT EXISTS idx_users_aws_cognito_id ON users (aws_cognito_id);
+CREATE INDEX IF NOT EXISTS idx_users_username ON users (username);
+CREATE INDEX IF NOT EXISTS idx_images_user_id ON images (user_id);
+CREATE INDEX IF NOT EXISTS idx_followers_follower_id ON followers (follower_id);
+CREATE INDEX IF NOT EXISTS idx_followers_followed_id ON followers (followed_id);
+CREATE INDEX IF NOT EXISTS idx_followers_follower_followed ON followers (follower_id, followed_id);
