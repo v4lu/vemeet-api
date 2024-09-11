@@ -6,10 +6,7 @@ import com.vemeet.backend.dto.PostUpdateRequest
 import com.vemeet.backend.dto.ReactionCreateRequest
 import com.vemeet.backend.exception.NotAllowedException
 import com.vemeet.backend.exception.ResourceNotFoundException
-import com.vemeet.backend.model.Post
-import com.vemeet.backend.model.PostImage
-import com.vemeet.backend.model.Reaction
-import com.vemeet.backend.model.User
+import com.vemeet.backend.model.*
 import com.vemeet.backend.repository.*
 import org.apache.coyote.BadRequestException
 import org.springframework.data.domain.Page
@@ -55,17 +52,20 @@ class PostService(
             throw BadRequestException("Post must have either content or images")
         }
 
-        val images = request.imageIds?.let { ids ->
-            imageRepository.findAllById(ids)
-                .filter { it.user?.id == currentUser.id }
-        } ?: emptyList()
+        val images = request.images?.map { imageUrl ->
+            imageRepository.save(Image(
+                url = imageUrl,
+                user = currentUser
+            ))
+        }
+
 
         val post = Post(
             user = currentUser,
             content = request.content,
         )
 
-        val postImages = images.mapIndexed { index, image ->
+        val postImages = images?.mapIndexed { index, image ->
             PostImage(
                 post = post,
                 image = image,
@@ -73,9 +73,11 @@ class PostService(
             )
         }
 
-        post.images.addAll(postImages)
+        postImages?.let { post.images.addAll(it) }
         val savedPost = postRepository.save(post)
         return PostResponse.fromPost(savedPost)
+
+
     }
 
     @Transactional

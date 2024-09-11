@@ -55,10 +55,11 @@ data class PostCreateRequest(
     val content: String? = null,
 
     @field:Size(max = 10, message = "Cannot upload more than 10 images")
-    @Schema(description = "List of image IDs to associate with the post")
-    val imageIds: List<Long>? = null
+    @Schema(description = "List of image urls")
+    val images: List<String>? = null
 ) {
-    fun isValid(): Boolean = !content.isNullOrBlank() || !imageIds.isNullOrEmpty()
+    @Schema(description = "This is check func, so user can upload image or post, both can't be empty")
+    fun isValid(): Boolean = !content.isNullOrBlank() || !images.isNullOrEmpty()
 }
 
 @Schema(description = "Post Update Request object")
