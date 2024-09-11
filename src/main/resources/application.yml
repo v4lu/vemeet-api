@@ -76,8 +76,6 @@ aws:
   cognitoDomain: ${AWS_COGNITO_DOMAIN}
   s3BucketName: ${AWS_S3_BUCKET}
 
-server:
-  port: ${PORT:8080}
 
 # Swagger
 springdoc:
@@ -85,3 +83,5 @@ springdoc:
     path: /v3/api-docs
   swagger-ui:
     path: /swagger-ui
+server:
+  port: 8070
