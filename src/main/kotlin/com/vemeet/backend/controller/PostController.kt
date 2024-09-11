@@ -220,6 +220,14 @@ class PostController(
     @GetMapping("/session")
     @Operation(
         summary = "Get user posts by session",
+        description = """
+             Example usage:
+        - Basic: /v1/posts/session
+        - With search: /v1/posts/session?search=cafe
+        - With pagination: /v1/posts/session?page=0&size=10
+        - With sorting: /v1/posts/session?sort=name,asc
+        - Combined: /v1/posts/session?search=cafe&page=0&size=10&sort=name,asc&sort=city,desc
+        """,
         responses = [
             ApiResponse(
                 responseCode = "200", description = "Successfully retrieved posts",
