@@ -163,7 +163,7 @@ class PostService(
 
     @Transactional
     fun getUserPosts(user: User, pageable: Pageable): Page<PostResponse> {
-        val posts = postRepository.findAllByUserId(user.id, pageable)
+        val posts = postRepository.findAllByUserIdOrderByCreatedAtDesc(user.id, pageable)
 
         return posts.map { PostResponse.fromPost(it) }
     }
