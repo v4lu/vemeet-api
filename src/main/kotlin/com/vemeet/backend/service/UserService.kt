@@ -40,13 +40,15 @@ class UserService(
 
         userUpdateRequest.bio?.let { user.bio = it }
         userUpdateRequest.name?.let { user.name = it }
-        userUpdateRequest.birthplaceLat?.let { user.birthplaceLat = it }
-        userUpdateRequest.birthplaceLng?.let { user.birthplaceLng = it }
         userUpdateRequest.gender?.let { user.gender = it }
-        userUpdateRequest.birthplaceName?.let { user.birthplaceName = it }
-        userUpdateRequest.residenceLat?.let { user.residenceLat = it }
-        userUpdateRequest.residenceLng?.let { user.residenceLng = it }
-        userUpdateRequest.residenceName?.let { user.residenceName = it }
+        userUpdateRequest.countryName?.let { user.countryName = it }
+        userUpdateRequest.countryFlag?.let { user.countryFlag = it }
+        userUpdateRequest.countryIsoCode?.let { user.countryIsoCode = it }
+        userUpdateRequest.countryLat?.let { user.countryLat = it }
+        userUpdateRequest.countryLng?.let { user.countryLng = it }
+        userUpdateRequest.cityName?.let { user.cityName = it }
+        userUpdateRequest.cityLat?.let { user.cityLat = it }
+        userUpdateRequest.cityLng?.let { user.cityLng = it }
         userUpdateRequest.isPrivate?.let { user.isPrivate = it }
         userUpdateRequest.inboxLocked.let { user.inboxLocked = it }
 
