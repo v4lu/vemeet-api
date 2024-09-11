@@ -216,4 +216,24 @@ class PostController(
         val updatedPost = postService.removeReaction(postId, currentUser)
         return ResponseEntity.ok(updatedPost)
     }
+
+    @GetMapping("/session")
+    @Operation(
+        summary = "Get user posts by session",
+        responses = [
+            ApiResponse(
+                responseCode = "200", description = "Successfully retrieved posts",
+                content = [Content(schema = Schema(implementation = Page::class))]
+            )
+        ]
+    )
+    fun getSessionPosts(
+        @RequestHeader("Authorization") authHeader: String,
+        pageable: Pageable
+    ): ResponseEntity<Page<PostResponse>> {
+        val accessToken = extractAccessToken(authHeader)
+        val currentUser = userService.getSessionUser(accessToken)
+        val posts = postService.getUserPosts(currentUser, pageable)
+        return ResponseEntity.ok(posts)
+    }
 }

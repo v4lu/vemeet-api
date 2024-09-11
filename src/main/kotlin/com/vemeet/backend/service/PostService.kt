@@ -160,4 +160,11 @@ class PostService(
     private fun isFollowing(follower: User, followed: User): Boolean {
         return followerRepository.existsByFollowerIdAndFollowedId(follower.id, followed.id)
     }
+
+    @Transactional
+    fun getUserPosts(user: User, pageable: Pageable): Page<PostResponse> {
+        val posts = postRepository.findAllByUserId(user.id, pageable)
+
+        return posts.map { PostResponse.fromPost(it) }
+    }
 }

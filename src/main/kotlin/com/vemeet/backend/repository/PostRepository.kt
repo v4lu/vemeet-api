@@ -10,6 +10,8 @@ import org.springframework.stereotype.Repository
 @Repository
 interface PostRepository : JpaRepository<Post, Long> {
 
+    fun findAllByUserId(userId: Long, pageable: Pageable): Page<Post>
+
     @Query("""
         SELECT p FROM Post p
         WHERE p.user.id = :userId OR
