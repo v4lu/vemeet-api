@@ -13,7 +13,7 @@ class CorsConfig {
     fun corsConfigurationSource(): CorsConfigurationSource {
         val configuration = CorsConfiguration()
         configuration.allowedOrigins = listOf("http://localhost:3000", "http://web-app:3000", "https://app.vemeet.me")
-        configuration.allowedMethods = listOf("GET", "POST", "PUT", "DELETE", "OPTIONS")
+        configuration.allowedMethods = listOf("GET", "POST","PATCH", "PUT", "DELETE", "OPTIONS")
         configuration.allowedHeaders = listOf("*")
         configuration.allowCredentials = true
         val source = UrlBasedCorsConfigurationSource()
