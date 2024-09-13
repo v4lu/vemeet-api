@@ -1,6 +1,6 @@
 package com.vemeet.backend.service
 
-import com.vemeet.backend.dto.ChatDTO
+import com.vemeet.backend.dto.ChatResponse
 import com.vemeet.backend.dto.MessageDTO
 import com.vemeet.backend.dto.SendMessageRequest
 import com.vemeet.backend.exception.NotAllowedException
@@ -55,20 +55,20 @@ class ChatService(
         )
 
         val savedMessage = messageRepository.save(message)
-
         chat.updatedAt = Instant.now()
         chatRepository.save(chat)
+        val messageDTO = decryptedMessage(savedMessage)
 
-        return decryptedMessage(savedMessage)
+        return messageDTO
     }
-    fun getUserChats(userId: Long): List<ChatDTO> {
+    fun getUserChats(userId: Long): List<ChatResponse> {
         val chats = chatRepository.findByUser1IdOrUser2Id(userId, userId)
-        return chats.map { ChatDTO.from(it) }
+        return chats.map { ChatResponse.from(it) }
     }
 
-    fun getChatMessages(chatId: Long, userId: Long): List<MessageDTO> {
+    fun getChatMessages(chatId: Long, user: User): List<MessageDTO> {
         val chat = chatRepository.findById(chatId).orElseThrow { ResourceNotFoundException("Chat not found") }
-        if (chat.user1.id != userId && chat.user2.id != userId) {
+        if (chat.user1.id != user.id && chat.user2.id != user.id) {
             throw NotAllowedException("You don't have access to this chat")
         }
         val messages = messageRepository.findByChatIdOrderByCreatedAtDesc(chatId)
@@ -89,19 +89,19 @@ class ChatService(
     }
 
     @Transactional
-    fun createChat(userId: Long, otherUserId: Long): ChatDTO {
+    fun createChat(userId: Long, otherUserId: Long): ChatResponse {
         val user = userRepository.findById(userId).orElseThrow { ResourceNotFoundException("User not found") }
         val otherUser = userRepository.findById(otherUserId).orElseThrow { ResourceNotFoundException("Other user not found") }
 
         val existingChat = chatRepository.findChatBetweenUsers(user, otherUser)
         if (existingChat != null) {
-            return ChatDTO.from(existingChat)
+            return ChatResponse.from(existingChat)
 
         }
 
         val newChat = Chat(user1 = user, user2 = otherUser)
         val savedChat = chatRepository.save(newChat)
-        return ChatDTO.from(savedChat)
+        return ChatResponse.from(savedChat)
 
     }
 

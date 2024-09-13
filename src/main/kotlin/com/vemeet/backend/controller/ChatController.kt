@@ -1,6 +1,6 @@
 package com.vemeet.backend.controller
 
-import com.vemeet.backend.dto.ChatDTO
+import com.vemeet.backend.dto.ChatResponse
 import com.vemeet.backend.dto.ExceptionResponse
 import com.vemeet.backend.dto.MessageDTO
 import com.vemeet.backend.dto.SendMessageRequest
@@ -45,7 +45,7 @@ class ChatController(
             )
         ]
     )
-    fun getAllChats(@RequestHeader("Authorization") authHeader: String): ResponseEntity<List<ChatDTO>> {
+    fun getAllChats(@RequestHeader("Authorization") authHeader: String): ResponseEntity<List<ChatResponse>> {
         val accessToken = extractAccessToken(authHeader)
         val user = userService.getSessionUser(accessToken)
         val chats = chatService.getUserChats(user.id)
@@ -79,7 +79,7 @@ class ChatController(
     ): ResponseEntity<List<MessageDTO>> {
         val accessToken = extractAccessToken(authHeader)
         val user = userService.getSessionUser(accessToken)
-        val messages = chatService.getChatMessages(chatId, user.id)
+        val messages = chatService.getChatMessages(chatId, user)
         return ResponseEntity.ok(messages)
     }
 
@@ -90,7 +90,7 @@ class ChatController(
             ApiResponse(
                 responseCode = "200",
                 description = "Chat created successfully",
-                content = [Content(schema = Schema(implementation = ChatDTO::class))]
+                content = [Content(schema = Schema(implementation = ChatResponse::class))]
             ),
             ApiResponse(
                 responseCode = "404",
@@ -107,7 +107,7 @@ class ChatController(
     fun createChat(
         @RequestHeader("Authorization") authHeader: String,
         @RequestBody request: CreateChatRequest
-    ): ResponseEntity<ChatDTO> {
+    ): ResponseEntity<ChatResponse> {
         val accessToken = extractAccessToken(authHeader)
         val user = userService.getSessionUser(accessToken)
         val chat = chatService.createChat(user.id, request.otherUserId)

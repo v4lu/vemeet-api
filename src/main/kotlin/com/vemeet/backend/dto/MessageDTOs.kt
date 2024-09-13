@@ -4,22 +4,23 @@ import com.vemeet.backend.model.Chat
 import com.vemeet.backend.model.Message
 import com.vemeet.backend.model.User
 import java.time.Instant
+import java.time.format.DateTimeFormatter
 
-data class ChatDTO(
+data class ChatResponse(
     val id: Long,
     val user1: User,
     val user2: User,
-    val createdAt: Instant,
-    val updatedAt: Instant
+    val createdAt: String,
+    val updatedAt: String
 ) {
     companion object {
-        fun from(chat: Chat): ChatDTO {
-            return ChatDTO(
+        fun from(chat: Chat): ChatResponse {
+            return ChatResponse(
                 id = chat.id,
                 user1 = chat.user1,
                 user2 = chat.user2,
-                createdAt = chat.createdAt,
-                updatedAt = chat.updatedAt
+                createdAt = DateTimeFormatter.ISO_INSTANT.format(chat.createdAt),
+                updatedAt = DateTimeFormatter.ISO_INSTANT.format(chat.updatedAt)
             )
         }
     }
@@ -28,11 +29,11 @@ data class ChatDTO(
 data class MessageDTO(
     val id: Long,
     val chatId: Long,
-    val senderId: Long,
+    val sender: User,
     val messageType: String,
     val content: String,
-    val createdAt: Instant,
-    val readAt: Instant?,
+    val createdAt: String,
+    val readAt: String?,
     val isOneTime: Boolean
 ) {
     companion object {
@@ -40,11 +41,11 @@ data class MessageDTO(
             return MessageDTO(
                 id = message.id,
                 chatId = message.chat.id,
-                senderId = message.sender.id,
+                sender = message.sender,
                 messageType = message.messageType,
                 content = decryptedContent,
-                createdAt = message.createdAt,
-                readAt = message.readAt,
+                createdAt = DateTimeFormatter.ISO_INSTANT.format(message.createdAt),
+                readAt = message.readAt?.let { DateTimeFormatter.ISO_INSTANT.format(it) },
                 isOneTime = message.isOneTime
             )
         }
