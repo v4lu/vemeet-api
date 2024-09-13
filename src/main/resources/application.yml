@@ -67,7 +67,7 @@ spring:
 ---
 
 aws:
-  region: eu-central-1
+  region: ${AWS_REGION}
   accessKey: ${AWS_ACCESS_KEY}
   secretKey: ${AWS_SECRET_KEY}
   cognitoUserPoolId: ${AWS_COGNITO_USER_POOL}
@@ -75,6 +75,8 @@ aws:
   cognitoSecret: ${AWS_COGNITO_SECRET}
   cognitoDomain: ${AWS_COGNITO_DOMAIN}
   s3BucketName: ${AWS_S3_BUCKET}
+  kms:
+    keyId: ${AWS_KMS_KEY_ID}
 
 
 # Swagger
