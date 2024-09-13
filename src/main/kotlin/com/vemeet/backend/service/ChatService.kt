@@ -59,11 +59,11 @@ class ChatService(
         chat.updatedAt = Instant.now()
         chatRepository.save(chat)
 
-        return createMessageDTO(savedMessage)
+        return decryptedMessage(savedMessage)
     }
     fun getUserChats(userId: Long): List<ChatDTO> {
         val chats = chatRepository.findByUser1IdOrUser2Id(userId, userId)
-        return chats.map { createChatDTO(it) }
+        return chats.map { ChatDTO.from(it) }
     }
 
     fun getChatMessages(chatId: Long, userId: Long): List<MessageDTO> {
@@ -72,20 +72,10 @@ class ChatService(
             throw NotAllowedException("You don't have access to this chat")
         }
         val messages = messageRepository.findByChatIdOrderByCreatedAtDesc(chatId)
-        return messages.map { createMessageDTO(it) }
+        return messages.map { decryptedMessage(it) }
     }
 
-    private fun createChatDTO(chat: Chat): ChatDTO {
-        return ChatDTO(
-            id = chat.id,
-            user1 = chat.user1,
-            user2 = chat.user2,
-            createdAt = chat.createdAt,
-            updatedAt = chat.updatedAt
-        )
-    }
-
-    private fun createMessageDTO(message: Message): MessageDTO {
+    private fun decryptedMessage(message: Message): MessageDTO {
         val decryptedContent = encryptionService.decrypt(
             EncryptedData(
                 encryptedContent = message.encryptedContent ?: ByteArray(0),
@@ -95,16 +85,7 @@ class ChatService(
             )
         )
 
-        return MessageDTO(
-            id = message.id,
-            chatId = message.chat.id,
-            senderId = message.sender.id,
-            messageType = message.messageType,
-            content = decryptedContent,
-            createdAt = message.createdAt,
-            readAt = message.readAt,
-            isOneTime = message.isOneTime
-        )
+        return MessageDTO.from(message, decryptedContent)
     }
 
     @Transactional
@@ -114,12 +95,14 @@ class ChatService(
 
         val existingChat = chatRepository.findChatBetweenUsers(user, otherUser)
         if (existingChat != null) {
-            return createChatDTO(existingChat)
+            return ChatDTO.from(existingChat)
+
         }
 
         val newChat = Chat(user1 = user, user2 = otherUser)
         val savedChat = chatRepository.save(newChat)
-        return createChatDTO(savedChat)
+        return ChatDTO.from(savedChat)
+
     }
 
 
