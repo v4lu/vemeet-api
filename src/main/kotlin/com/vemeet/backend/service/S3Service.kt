@@ -27,8 +27,6 @@ class S3Service(private val s3Client: S3Client) {
             .build()
 
         try {
-
-
             s3Client.putObject(request, RequestBody.fromInputStream(file.inputStream, file.size))
             val url = "https://$bucketName.s3.$region.amazonaws.com/$fileName"
             return UploadResponse(url)
