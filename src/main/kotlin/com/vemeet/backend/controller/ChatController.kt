@@ -1,9 +1,6 @@
 package com.vemeet.backend.controller
 
-import com.vemeet.backend.dto.ChatResponse
-import com.vemeet.backend.dto.ExceptionResponse
-import com.vemeet.backend.dto.MessageDTO
-import com.vemeet.backend.dto.SendMessageRequest
+import com.vemeet.backend.dto.*
 import com.vemeet.backend.service.ChatService
 import com.vemeet.backend.service.UserService
 import com.vemeet.backend.utils.extractAccessToken
@@ -147,6 +144,3 @@ class ChatController(
     }
 }
 
-data class CreateChatRequest(
-    val otherUserId: Long
-)

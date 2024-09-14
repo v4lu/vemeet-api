@@ -3,7 +3,6 @@ package com.vemeet.backend.dto
 import com.vemeet.backend.model.Chat
 import com.vemeet.backend.model.Message
 import com.vemeet.backend.model.User
-import java.time.Instant
 import java.time.format.DateTimeFormatter
 
 data class ChatResponse(
@@ -57,4 +56,8 @@ data class SendMessageRequest(
     val messageType: String,
     val content: String,
     val isOneTime: Boolean = false
+)
+
+data class CreateChatRequest(
+    val otherUserId: Long
 )
