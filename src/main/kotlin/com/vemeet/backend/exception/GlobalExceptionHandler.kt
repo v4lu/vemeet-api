@@ -1,5 +1,7 @@
 package com.vemeet.backend.exception
 
+import com.amazonaws.services.cognitoidp.model.UserNotConfirmedException
+import com.amazonaws.services.cognitoidp.model.UserNotFoundException
 import com.vemeet.backend.dto.ExceptionResponse
 import com.vemeet.backend.dto.FieldException
 import org.apache.coyote.BadRequestException
@@ -16,6 +18,16 @@ import org.springframework.web.servlet.NoHandlerFoundException
 
 @ControllerAdvice
 class GlobalExceptionHandler {
+
+    @ExceptionHandler(NotConfirmedEmailException::class)
+    fun handleUserNotConfirmedException(ex: NotConfirmedEmailException): ResponseEntity<ExceptionResponse> {
+        val errorResponse = ExceptionResponse(
+            statusCode = HttpStatus.FORBIDDEN.value(),
+            message = ex.message,
+        )
+
+        return ResponseEntity(errorResponse, HttpStatus.FORBIDDEN)
+    }
 
     @ExceptionHandler(IllegalStateException::class)
     fun handleIllegalStateException(ex: IllegalStateException): ResponseEntity<ExceptionResponse> {

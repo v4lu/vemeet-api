@@ -1,9 +1,11 @@
 package com.vemeet.backend.service
 
+import com.amazonaws.services.cognitoidp.model.UserNotConfirmedException
 import java.time.format.DateTimeFormatter
 import com.amazonaws.services.cognitoidp.model.UserNotFoundException
 import com.vemeet.backend.cache.UserCache
 import com.vemeet.backend.dto.*
+import com.vemeet.backend.exception.NotConfirmedEmailException
 import com.vemeet.backend.exception.ResourceNotFoundException
 import com.vemeet.backend.model.Image
 import com.vemeet.backend.model.User
@@ -53,14 +55,19 @@ class AuthService(
     fun login(logReq : LoginRequest):LoginResponse {
         val authResult = try {
             cognitoService.initiateAuth(logReq.email, logReq.password)
-        } catch (e: Exception) {
+        } catch (e: UserNotConfirmedException) {
+            throw NotConfirmedEmailException("User is not confirmed. Please confirm your account.")
+        }
+        catch (e: Exception) {
+            println(e.message)
+            println(e.cause)
             throw BadCredentialsException("Invalid email or password")
         }
 
         val cognitoId = try {
             cognitoService.getUserSub(authResult.authenticationResult.accessToken)
         } catch (e: Exception) {
-            throw BadCredentialsException("Invalid email or password")
+           throw BadCredentialsException("Invalid email or password")
         }
 
         val user = findByAwsCognitoId(cognitoId)

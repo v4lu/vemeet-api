@@ -103,13 +103,14 @@ class AuthController(
                 content = [Content(schema = Schema(implementation = LoginResponse::class))]),
             ApiResponse(responseCode = "401", description = "Invalid Credentials even if user not found",
                 content = [Content(schema = Schema(implementation = ExceptionResponse::class))]),
+            ApiResponse(responseCode = "403", description = "Not confirmed email",
+                content = [Content(schema = Schema(implementation = ExceptionResponse::class))]),
             ApiResponse(responseCode = "422", description = "Validation error - invalid input",
                 content = [Content(schema = Schema(implementation = ExceptionResponse::class))])
         ]
     )
     fun login(@Valid @RequestBody logReq: LoginRequest): ResponseEntity<LoginResponse> {
-        val res =  authService.login(logReq)
-        return  ResponseEntity.ok(res)
+        return  ResponseEntity.ok(authService.login(logReq))
     }
 
 

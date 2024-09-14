@@ -7,3 +7,4 @@ class ConfirmationCodeExpiredException(message: String) : RuntimeException(messa
 class InvalidConfirmationCodeException(message: String) : RuntimeException(message)
 class InvalidCredentialsException(message: String) : RuntimeException(message)
 class EmailAlreadyExistsException(message: String) : RuntimeException(message)
+class NotConfirmedEmailException(message: String) : RuntimeException(message)
