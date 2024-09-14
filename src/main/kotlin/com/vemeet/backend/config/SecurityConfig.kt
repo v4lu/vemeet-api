@@ -36,6 +36,7 @@ class SecurityConfig(
                     ).permitAll()
                     .requestMatchers("/swagger-ui/**", "/swagger-ui.html", "/v3/api-docs/**").permitAll()
                     .requestMatchers("/hello/**").permitAll()
+                    .requestMatchers("/chat/**").permitAll()
                     .anyRequest().authenticated()
             }
             .oauth2ResourceServer { oauth2 ->

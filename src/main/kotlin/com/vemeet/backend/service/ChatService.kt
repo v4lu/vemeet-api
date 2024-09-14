@@ -1,5 +1,6 @@
 package com.vemeet.backend.service
 
+import com.fasterxml.jackson.databind.ObjectMapper
 import com.vemeet.backend.dto.ChatResponse
 import com.vemeet.backend.dto.MessageDTO
 import com.vemeet.backend.dto.SendMessageRequest
@@ -25,9 +26,9 @@ class ChatService(
     private val userRepository: UserRepository,
     private val encryptionService: EncryptionService,
     private val chatRepository: ChatRepository,
+    private val objectMapper: ObjectMapper,
+    private val chatWebSocketService: ChatWebSocketService,
 ) {
-
-
     @Transactional
     fun sendMessage(sender: User, chatId: Long, request: SendMessageRequest): MessageDTO {
         val chat = chatRepository.findById(chatId).orElseThrow { ResourceNotFoundException("Chat not found") }
@@ -58,6 +59,9 @@ class ChatService(
         chat.updatedAt = Instant.now()
         chatRepository.save(chat)
         val messageDTO = decryptedMessage(savedMessage)
+
+        val webSocketMessage = objectMapper.writeValueAsString(messageDTO)
+        chatWebSocketService.sendMessage(recipient.id, webSocketMessage)
 
         return messageDTO
     }
@@ -109,6 +113,4 @@ class ChatService(
     private fun isFollowing(followerId: Long, followedId: Long): Boolean {
         return true // Placeholder
     }
-
-
 }
