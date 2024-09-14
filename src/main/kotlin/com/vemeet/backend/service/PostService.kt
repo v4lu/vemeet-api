@@ -39,7 +39,6 @@ class PostService(
         return PostResponse.fromPost(post)
     }
 
-
     @Transactional(readOnly = true)
     fun getVisiblePosts(currentUser: User, pageable: Pageable): Page<PostResponse> {
         return postRepository.findVisiblePosts(currentUser.id, pageable)
@@ -76,8 +75,6 @@ class PostService(
         postImages?.let { post.images.addAll(it) }
         val savedPost = postRepository.save(post)
         return PostResponse.fromPost(savedPost)
-
-
     }
 
     @Transactional
@@ -105,8 +102,10 @@ class PostService(
         if (post.user.id != currentUser.id) {
             throw NotAllowedException("You don't have permission to delete this post")
         }
+        val imageIds = post.images.map { it.image.id }
 
         postRepository.delete(post)
+        imageRepository.deleteAllById(imageIds)
     }
 
     @Transactional
