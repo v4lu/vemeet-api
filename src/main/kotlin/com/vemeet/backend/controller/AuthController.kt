@@ -257,9 +257,7 @@ class AuthController(
         responses = [
             ApiResponse(responseCode = "200", description = "Password changed successfully",
                 content = [Content(schema = Schema(implementation = AuthMessageResponse::class))]),
-            ApiResponse(responseCode = "400", description = "Invalid old password",
-                content = [Content(schema = Schema(implementation = ExceptionResponse::class))]),
-            ApiResponse(responseCode = "401", description = "Unauthorized - Invalid or missing token",
+            ApiResponse(responseCode = "401", description = "Unauthorized - Invalid password / missing token",
                 content = [Content(schema = Schema(implementation = ExceptionResponse::class))]),
             ApiResponse(responseCode = "422", description = "Validation error - invalid input",
                 content = [Content(schema = Schema(implementation = ExceptionResponse::class))])

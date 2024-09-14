@@ -135,7 +135,11 @@ class AuthService(
     }
 
     fun changePassword(accessToken: String, oldPassword: String, newPassword: String) {
-        cognitoService.changePassword(accessToken, oldPassword, newPassword)
+        try {
+            cognitoService.changePassword(accessToken, oldPassword, newPassword)
+        } catch (e: Exception) {
+            throw BadCredentialsException("Invalid password")
+        }
     }
 
     @Transactional
