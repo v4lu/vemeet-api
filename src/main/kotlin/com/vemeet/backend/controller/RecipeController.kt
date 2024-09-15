@@ -2,9 +2,10 @@ package com.vemeet.backend.controller
 
 import com.vemeet.backend.dto.CreateRecipeRequest
 import com.vemeet.backend.dto.RecipeResponse
+import com.vemeet.backend.exception.NotAllowedException
 import com.vemeet.backend.model.Difficulty
 import com.vemeet.backend.service.RecipeService
-import com.vemeet.backend.utils.extractAccessToken
+import com.vemeet.backend.utils.CognitoIdExtractor
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.Parameter
 import io.swagger.v3.oas.annotations.media.Content
@@ -17,6 +18,7 @@ import org.springframework.data.domain.Pageable
 import org.springframework.data.domain.Sort
 import org.springframework.format.annotation.DateTimeFormat
 import org.springframework.http.ResponseEntity
+import org.springframework.security.core.Authentication
 import org.springframework.web.bind.annotation.*
 import java.time.Instant
 
@@ -28,9 +30,13 @@ class RecipeController(private val recipeService: RecipeService) {
     @PostMapping
     @Operation(summary = "Create a new recipe", description = "Creates a new recipe for the authenticated user")
     @ApiResponse(responseCode = "200", description = "Recipe created successfully", content = [Content(schema = Schema(implementation = RecipeResponse::class))])
-    fun createRecipe(@RequestBody request: CreateRecipeRequest, @RequestHeader("Authorization") authHeader: String): ResponseEntity<RecipeResponse> {
-        val accessToken = extractAccessToken(authHeader)
-        val recipe = recipeService.createRecipe(request, accessToken)
+    fun createRecipe(
+        @RequestBody request: CreateRecipeRequest,
+        authentication: Authentication,
+
+        ): ResponseEntity<RecipeResponse> {
+        val cognitoId = CognitoIdExtractor.extractCognitoId(authentication)  ?: throw NotAllowedException("Not valid token")
+        val recipe = recipeService.createRecipe(request, cognitoId)
         return ResponseEntity.ok(recipe)
     }
 
@@ -56,9 +62,10 @@ class RecipeController(private val recipeService: RecipeService) {
     @ApiResponse(responseCode = "200", description = "Recipe updated successfully", content = [Content(schema = Schema(implementation = RecipeResponse::class))])
     @ApiResponse(responseCode = "404", description = "Recipe not found")
     @ApiResponse(responseCode = "403", description = "Not allowed to update this recipe")
-    fun updateRecipe(@PathVariable id: Long, @RequestBody request: CreateRecipeRequest, @RequestHeader("Authorization") authHeader: String): ResponseEntity<RecipeResponse> {
-        val accessToken = extractAccessToken(authHeader)
-        val updatedRecipe = recipeService.updateRecipe(id, request, accessToken)
+    fun updateRecipe(@PathVariable id: Long, @RequestBody request: CreateRecipeRequest, authentication: Authentication): ResponseEntity<RecipeResponse> {
+        val cognitoId = CognitoIdExtractor.extractCognitoId(authentication)  ?: throw NotAllowedException("Not valid token")
+
+        val updatedRecipe = recipeService.updateRecipe(id, request, cognitoId)
         return ResponseEntity.ok(updatedRecipe)
     }
 
@@ -67,9 +74,9 @@ class RecipeController(private val recipeService: RecipeService) {
     @ApiResponse(responseCode = "204", description = "Recipe deleted successfully")
     @ApiResponse(responseCode = "404", description = "Recipe not found")
     @ApiResponse(responseCode = "403", description = "Not allowed to delete this recipe")
-    fun deleteRecipe(@PathVariable id: Long, @RequestHeader("Authorization") authHeader: String): ResponseEntity<Unit> {
-        val accessToken = extractAccessToken(authHeader)
-        recipeService.deleteRecipe(id, accessToken)
+    fun deleteRecipe(@PathVariable id: Long, authentication: Authentication): ResponseEntity<Unit> {
+        val cognitoId = CognitoIdExtractor.extractCognitoId(authentication)  ?: throw NotAllowedException("Not valid token")
+        recipeService.deleteRecipe(id, cognitoId)
         return ResponseEntity.noContent().build()
     }
 

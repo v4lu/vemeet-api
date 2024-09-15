@@ -1,20 +1,21 @@
 package com.vemeet.backend.controller
 
 import com.vemeet.backend.dto.*
+import com.vemeet.backend.exception.NotAllowedException
 import com.vemeet.backend.service.ChatService
 import com.vemeet.backend.service.UserService
-import com.vemeet.backend.utils.extractAccessToken
+import com.vemeet.backend.utils.CognitoIdExtractor
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.media.Content
 import io.swagger.v3.oas.annotations.media.Schema
 import io.swagger.v3.oas.annotations.responses.ApiResponse
 import io.swagger.v3.oas.annotations.tags.Tag
 import org.springframework.http.ResponseEntity
+import org.springframework.security.core.Authentication
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
-import org.springframework.web.bind.annotation.RequestHeader
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RestController
 
@@ -42,9 +43,9 @@ class ChatController(
             )
         ]
     )
-    fun getAllChats(@RequestHeader("Authorization") authHeader: String): ResponseEntity<List<ChatResponse>> {
-        val accessToken = extractAccessToken(authHeader)
-        val user = userService.getSessionUser(accessToken)
+    fun getAllChats(authentication: Authentication): ResponseEntity<List<ChatResponse>> {
+        val cognitoId = CognitoIdExtractor.extractCognitoId(authentication)  ?: throw NotAllowedException("Not valid token")
+        val user = userService.getSessionUser(cognitoId)
         val chats = chatService.getUserChats(user.id)
         return ResponseEntity.ok(chats)
     }
@@ -71,11 +72,11 @@ class ChatController(
         ]
     )
     fun getChatMessages(
-        @RequestHeader("Authorization") authHeader: String,
+        authentication: Authentication,
         @PathVariable chatId: Long
     ): ResponseEntity<List<MessageDTO>> {
-        val accessToken = extractAccessToken(authHeader)
-        val user = userService.getSessionUser(accessToken)
+        val cognitoId = CognitoIdExtractor.extractCognitoId(authentication)  ?: throw NotAllowedException("Not valid token")
+        val user = userService.getSessionUser(cognitoId)
         val messages = chatService.getChatMessages(chatId, user)
         return ResponseEntity.ok(messages)
     }
@@ -102,11 +103,11 @@ class ChatController(
         ]
     )
     fun createChat(
-        @RequestHeader("Authorization") authHeader: String,
+        authentication: Authentication,
         @RequestBody request: CreateChatRequest
     ): ResponseEntity<ChatResponse> {
-        val accessToken = extractAccessToken(authHeader)
-        val user = userService.getSessionUser(accessToken)
+        val cognitoId = CognitoIdExtractor.extractCognitoId(authentication)  ?: throw NotAllowedException("Not valid token")
+        val user = userService.getSessionUser(cognitoId)
         val chat = chatService.createChat(user.id, request.otherUserId)
         return ResponseEntity.ok(chat)
     }
@@ -133,12 +134,12 @@ class ChatController(
         ]
     )
     fun sendMessage(
-        @RequestHeader("Authorization") authHeader: String,
+        authentication: Authentication,
         @PathVariable chatId: Long,
         @RequestBody request: SendMessageRequest
     ): ResponseEntity<MessageDTO> {
-        val accessToken = extractAccessToken(authHeader)
-        val user = userService.getSessionUser(accessToken)
+        val cognitoId = CognitoIdExtractor.extractCognitoId(authentication)  ?: throw NotAllowedException("Not valid token")
+        val user = userService.getSessionUser(cognitoId)
         val message = chatService.sendMessage(user, chatId, request)
         return ResponseEntity.ok(message)
     }

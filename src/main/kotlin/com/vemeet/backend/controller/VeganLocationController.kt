@@ -3,8 +3,9 @@ import com.vemeet.backend.dto.ExceptionResponse
 import com.vemeet.backend.dto.VeganLocationRequest
 import com.vemeet.backend.dto.VeganLocationResponse
 import com.vemeet.backend.dto.VeganLocationUpdateRequest
+import com.vemeet.backend.exception.NotAllowedException
 import com.vemeet.backend.service.VeganLocationService
-import com.vemeet.backend.utils.extractAccessToken
+import com.vemeet.backend.utils.CognitoIdExtractor
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.media.Content
 import io.swagger.v3.oas.annotations.media.Schema
@@ -14,6 +15,7 @@ import jakarta.validation.Valid
 import org.springframework.data.domain.Page
 import org.springframework.data.domain.Pageable
 import org.springframework.http.ResponseEntity
+import org.springframework.security.core.Authentication
 import org.springframework.web.bind.annotation.*
 
 @RestController
@@ -94,10 +96,11 @@ class VeganLocationController(
     )
     fun createLocation(
         @Valid @RequestBody request: VeganLocationRequest,
-        @RequestHeader("Authorization") authHeader: String
+        authentication: Authentication,
     ): ResponseEntity<VeganLocationResponse> {
-        val accessToken = extractAccessToken(authHeader)
-        val createdLocation = veganLocationService.createLocation(request, accessToken)
+        val cognitoId = CognitoIdExtractor.extractCognitoId(authentication)  ?: throw NotAllowedException("Not valid token")
+
+        val createdLocation = veganLocationService.createLocation(request, cognitoId)
         return ResponseEntity.ok(createdLocation)
     }
 
@@ -123,10 +126,10 @@ class VeganLocationController(
     fun updateLocation(
         @PathVariable id: Long,
         @Valid @RequestBody request: VeganLocationUpdateRequest,
-        @RequestHeader("Authorization") authHeader: String
-    ): ResponseEntity<VeganLocationResponse> {
-        val accessToken = extractAccessToken(authHeader)
-        val updatedLocation = veganLocationService.updateLocation(id, request, accessToken)
+        authentication: Authentication,
+        ): ResponseEntity<VeganLocationResponse> {
+        val cognitoId = CognitoIdExtractor.extractCognitoId(authentication)  ?: throw NotAllowedException("Not valid token")
+        val updatedLocation = veganLocationService.updateLocation(id, request, cognitoId)
         return ResponseEntity.ok(VeganLocationResponse.fromVeganLocation(updatedLocation))
     }
 
@@ -147,10 +150,12 @@ class VeganLocationController(
     )
     fun deleteLocation(
         @PathVariable id: Long,
-        @RequestHeader("Authorization") authHeader: String
-    ): ResponseEntity<Unit> {
-        val accessToken = extractAccessToken(authHeader)
-        veganLocationService.deleteLocation(id, accessToken)
+        authentication: Authentication,
+
+        ): ResponseEntity<Unit> {
+        val cognitoId = CognitoIdExtractor.extractCognitoId(authentication)  ?: throw NotAllowedException("Not valid token")
+
+        veganLocationService.deleteLocation(id, cognitoId)
         return ResponseEntity.noContent().build()
     }
 }

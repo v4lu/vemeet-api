@@ -4,9 +4,10 @@ import com.vemeet.backend.dto.ExceptionResponse
 import com.vemeet.backend.dto.LocationReviewRequest
 import com.vemeet.backend.dto.LocationReviewResponse
 import com.vemeet.backend.dto.LocationReviewUpdateRequest
+import com.vemeet.backend.exception.NotAllowedException
 import com.vemeet.backend.service.LocationReviewService
 import com.vemeet.backend.service.UserService
-import com.vemeet.backend.utils.extractAccessToken
+import com.vemeet.backend.utils.CognitoIdExtractor
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.media.Content
 import io.swagger.v3.oas.annotations.media.Schema
@@ -16,6 +17,7 @@ import jakarta.validation.Valid
 import org.springframework.data.domain.Page
 import org.springframework.data.domain.Pageable
 import org.springframework.http.ResponseEntity
+import org.springframework.security.core.Authentication
 import org.springframework.web.bind.annotation.*
 
 @RestController
@@ -76,10 +78,10 @@ class LocationReviewController(
     fun createReview(
         @PathVariable locationId: Long,
         @Valid @RequestBody request: LocationReviewRequest,
-        @RequestHeader("Authorization") authHeader: String
+        authentication: Authentication,
     ): ResponseEntity<LocationReviewResponse> {
-        val token = extractAccessToken(authHeader)
-        val user = userService.getSessionUser(token)
+        val cognitoId = CognitoIdExtractor.extractCognitoId(authentication)  ?: throw NotAllowedException("Not valid token")
+        val user = userService.getSessionUser(cognitoId)
         val review = locationReviewService.createReview(locationId, request, user)
         return ResponseEntity.ok(review)
     }
@@ -115,10 +117,10 @@ class LocationReviewController(
         @PathVariable locationId: Long,
         @PathVariable reviewId: Long,
         @Valid @RequestBody request: LocationReviewUpdateRequest,
-        @RequestHeader("Authorization") authHeader: String
+        authentication: Authentication
     ): ResponseEntity<LocationReviewResponse> {
-        val token = extractAccessToken(authHeader)
-        val user = userService.getSessionUser(token)
+        val cognitoId = CognitoIdExtractor.extractCognitoId(authentication)  ?: throw NotAllowedException("Not valid token")
+        val user = userService.getSessionUser(cognitoId)
         val updatedReview = locationReviewService.updateReview(reviewId, request, user)
         return ResponseEntity.ok(updatedReview)
     }
@@ -144,10 +146,10 @@ class LocationReviewController(
     fun deleteReview(
         @PathVariable locationId: Long,
         @PathVariable reviewId: Long,
-        @RequestHeader("Authorization") authHeader: String
+        authentication: Authentication
     ): ResponseEntity<Unit> {
-        val token = extractAccessToken(authHeader)
-        val user = userService.getSessionUser(token)
+        val cognitoId = CognitoIdExtractor.extractCognitoId(authentication)  ?: throw NotAllowedException("Not valid token")
+        val user = userService.getSessionUser(cognitoId)
         locationReviewService.deleteReview(reviewId, user)
         return ResponseEntity.noContent().build()
     }

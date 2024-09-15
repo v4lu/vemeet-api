@@ -6,7 +6,6 @@ import com.vemeet.backend.dto.UserUpdateRequest
 import com.vemeet.backend.exception.NotAllowedException
 import com.vemeet.backend.service.UserService
 import com.vemeet.backend.utils.CognitoIdExtractor
-import com.vemeet.backend.utils.extractAccessToken
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.media.Content
 import io.swagger.v3.oas.annotations.media.Schema
@@ -73,11 +72,11 @@ class UserController(
         ]
     )
     fun updateUser(
-        @RequestHeader("Authorization") authHeader: String,
+        authentication: Authentication,
         @RequestBody userUpdateRequest: UserUpdateRequest
     ): ResponseEntity<UserResponse> {
-        val accessToken = extractAccessToken(authHeader)
-        val updatedUser = userService.updateUser(accessToken, userUpdateRequest)
+        val cognitoId = CognitoIdExtractor.extractCognitoId(authentication)  ?: throw NotAllowedException("Not valid token")
+        val updatedUser = userService.updateUser(cognitoId, userUpdateRequest)
         return ResponseEntity.ok(UserResponse.fromUser(updatedUser))
     }
 
