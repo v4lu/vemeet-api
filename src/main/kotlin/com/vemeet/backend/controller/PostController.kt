@@ -241,7 +241,34 @@ class PostController(
     ): ResponseEntity<Page<PostResponse>> {
         val accessToken = extractAccessToken(authHeader)
         val currentUser = userService.getSessionUser(accessToken)
-        val posts = postService.getUserPosts(currentUser, pageable)
+        val posts = postService.getUserPosts(currentUser.id, pageable)
+        return ResponseEntity.ok(posts)
+    }
+
+
+    @GetMapping("/user/{userId}")
+    @Operation(
+        summary = "Get user posts by user id ",
+        description = """
+             Example usage:
+        - Basic: /v1/posts/session
+        - With search: /v1/posts/user/{id}?search=cafe
+        - With pagination: /v1/posts/user/{id}?page=0&size=10
+        - With sorting: /v1/posts/user/{id}?sort=name,asc
+        - Combined: /v1/posts/user/{id}?search=cafe&page=0&size=10&sort=name,asc&sort=city,desc
+        """,
+        responses = [
+            ApiResponse(
+                responseCode = "200", description = "Successfully retrieved posts",
+                content = [Content(schema = Schema(implementation = Page::class))]
+            )
+        ]
+    )
+    fun getUserPosts(
+        @PathVariable userId: Long,
+        pageable: Pageable
+    ): ResponseEntity<Page<PostResponse>> {
+        val posts = postService.getUserPosts(userId, pageable)
         return ResponseEntity.ok(posts)
     }
 }
