@@ -1,6 +1,7 @@
 package com.vemeet.backend.service
 
 import com.vemeet.backend.cache.UserCache
+import com.vemeet.backend.dto.UserResponse
 import com.vemeet.backend.model.User
 import com.vemeet.backend.repository.UserRepository
 import org.springframework.stereotype.Service
@@ -72,5 +73,10 @@ class UserService(
         userCache.deleteUserSession(accessToken)
         userCache.cacheUserSession(accessToken, 3600, updatedUser) // 1h
         return updatedUser
+    }
+
+    fun getUserById(userId: Long): UserResponse {
+        val user = userRepository.findUserById(userId) ?: throw ResourceNotFoundException("User with $userId not found")
+        return UserResponse.fromUser(user)
     }
 }

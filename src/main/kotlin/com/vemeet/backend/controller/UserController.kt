@@ -11,12 +11,7 @@ import io.swagger.v3.oas.annotations.media.Schema
 import io.swagger.v3.oas.annotations.responses.ApiResponse
 import io.swagger.v3.oas.annotations.tags.Tag
 import org.springframework.http.ResponseEntity
-import org.springframework.web.bind.annotation.GetMapping
-import org.springframework.web.bind.annotation.PatchMapping
-import org.springframework.web.bind.annotation.RequestBody
-import org.springframework.web.bind.annotation.RequestHeader
-import org.springframework.web.bind.annotation.RequestMapping
-import org.springframework.web.bind.annotation.RestController
+import org.springframework.web.bind.annotation.*
 
 @RestController
 @RequestMapping("/v1/users")
@@ -79,5 +74,23 @@ class UserController(
         val accessToken = extractAccessToken(authHeader)
         val updatedUser = userService.updateUser(accessToken, userUpdateRequest)
         return ResponseEntity.ok(UserResponse.fromUser(updatedUser))
+    }
+
+
+    @GetMapping("/{userId}")
+    @Operation(
+        summary = "Get user by id",
+        responses = [
+            ApiResponse(
+                responseCode = "200", description = "Successfully updated user profile",
+                content = [Content(schema = Schema(implementation = UserResponse::class))]
+            ),
+        ]
+    )
+    fun getUser(
+        @PathVariable("userId") userId: Long
+    ): ResponseEntity<UserResponse> {
+        return ResponseEntity.ok(userService.getUserById(userId))
+
     }
 }
