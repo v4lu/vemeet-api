@@ -3,7 +3,9 @@ package com.vemeet.backend.controller
 import com.vemeet.backend.dto.ExceptionResponse
 import com.vemeet.backend.dto.UserResponse
 import com.vemeet.backend.dto.UserUpdateRequest
+import com.vemeet.backend.exception.NotAllowedException
 import com.vemeet.backend.service.UserService
+import com.vemeet.backend.utils.CognitoIdExtractor
 import com.vemeet.backend.utils.extractAccessToken
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.media.Content
@@ -11,6 +13,7 @@ import io.swagger.v3.oas.annotations.media.Schema
 import io.swagger.v3.oas.annotations.responses.ApiResponse
 import io.swagger.v3.oas.annotations.tags.Tag
 import org.springframework.http.ResponseEntity
+import org.springframework.security.core.Authentication
 import org.springframework.web.bind.annotation.*
 
 @RestController
@@ -38,9 +41,11 @@ class UserController(
             )
         ]
     )
-    fun getSession(@RequestHeader("Authorization") authHeader: String): ResponseEntity<UserResponse> {
-        val accessToken = extractAccessToken(authHeader)
-        val user = userService.getSessionUser(accessToken)
+    fun getSession(authentication: Authentication): ResponseEntity<UserResponse> {
+        val cognitoId = CognitoIdExtractor.extractCognitoId(authentication)  ?: throw NotAllowedException("Not valid token")
+        val user = userService.getSessionUser(cognitoId)
+        println(cognitoId)
+
         return ResponseEntity.ok(UserResponse.fromUser(user))
     }
 
@@ -83,6 +88,10 @@ class UserController(
         responses = [
             ApiResponse(
                 responseCode = "200", description = "Successfully updated user profile",
+                content = [Content(schema = Schema(implementation = UserResponse::class))]
+            ),
+            ApiResponse(
+                responseCode = "404", description = "User not found",
                 content = [Content(schema = Schema(implementation = UserResponse::class))]
             ),
         ]

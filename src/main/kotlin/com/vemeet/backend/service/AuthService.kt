@@ -3,7 +3,7 @@ package com.vemeet.backend.service
 import com.amazonaws.services.cognitoidp.model.UserNotConfirmedException
 import java.time.format.DateTimeFormatter
 import com.amazonaws.services.cognitoidp.model.UserNotFoundException
-import com.vemeet.backend.cache.UserCache
+import com.vemeet.backend.cache.SessionCache
 import com.vemeet.backend.dto.*
 import com.vemeet.backend.exception.NotConfirmedEmailException
 import com.vemeet.backend.exception.ResourceNotFoundException
@@ -12,12 +12,8 @@ import com.vemeet.backend.model.User
 import com.vemeet.backend.repository.UserRepository
 import com.vemeet.backend.security.CognitoService
 import jakarta.transaction.Transactional
-import org.springframework.http.HttpHeaders
-import org.springframework.http.ResponseCookie
-import org.springframework.http.ResponseEntity
 import org.springframework.security.authentication.BadCredentialsException
 import org.springframework.stereotype.Service
-import java.time.Duration
 import java.time.Instant
 import java.time.temporal.ChronoUnit
 
@@ -25,7 +21,7 @@ import java.time.temporal.ChronoUnit
 class AuthService(
     private val userRepository: UserRepository,
     private val cognitoService: CognitoService,
-    private val userCache: UserCache
+    private val sessionCache: SessionCache,
 ) {
 
     fun createUser(regReq: RegisterRequest, awsCognitoId: String):  RegisterResponse  {
@@ -59,8 +55,6 @@ class AuthService(
             throw NotConfirmedEmailException("User is not confirmed. Please confirm your account.")
         }
         catch (e: Exception) {
-            println(e.message)
-            println(e.cause)
             throw BadCredentialsException("Invalid email or password")
         }
 
@@ -73,8 +67,8 @@ class AuthService(
         val user = findByAwsCognitoId(cognitoId)
             ?: throw UserNotFoundException("User not found in the database")
 
-        userCache.cacheUserSession(
-            authResult.authenticationResult.accessToken,
+        sessionCache.cacheUserSession(
+            cognitoId,
             authResult.authenticationResult.expiresIn.toLong(),
             user
         )
@@ -106,8 +100,8 @@ class AuthService(
         val user = findByAwsCognitoId(cognitoId)
             ?: throw UserNotFoundException("User not found in the database")
 
-        userCache.cacheUserSession(
-            authResult.authenticationResult.accessToken,
+        sessionCache.cacheUserSession(
+            cognitoId,
             authResult.authenticationResult.expiresIn.toLong(),
             user
         )
@@ -150,7 +144,7 @@ class AuthService(
 
         cognitoService.deleteUser(accessToken)
         userRepository.delete(user)
-        userCache.deleteUserSession(accessToken)
+        sessionCache.deleteUserSession(accessToken)
     }
 
     fun initiateEmailChange(accessToken: String, newEmail: String) {

@@ -9,22 +9,22 @@ import java.time.Duration
 class UserCache(private val redisTemplate: RedisTemplate<String, User>) {
 
     companion object {
-        private const val USER_SESSION_PREFIX = "user_session:"
+        private const val USER_SESSION_PREFIX = "user:"
 
     }
 
-    fun cacheUserSession(token: String, expiresIn: Long, user: User) {
-        val key = "$USER_SESSION_PREFIX$token"
+    fun cacheUser(id: Long, expiresIn: Long, user: User) {
+        val key = "$USER_SESSION_PREFIX$id"
         redisTemplate.opsForValue().set(key, user, Duration.ofSeconds(expiresIn))
     }
 
-    fun getUserSession(token: String): User? {
-        val key = "$USER_SESSION_PREFIX$token"
+    fun getUser(id: Long): User? {
+        val key = "$USER_SESSION_PREFIX$id"
         return redisTemplate.opsForValue().get(key)
     }
 
-    fun deleteUserSession(token: String) {
-        val key = "$USER_SESSION_PREFIX$token"
+    fun deleteUser(id: Long) {
+        val key = "$USER_SESSION_PREFIX$id"
         redisTemplate.delete(key)
     }
 }
