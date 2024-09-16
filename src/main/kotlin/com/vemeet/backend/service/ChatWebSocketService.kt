@@ -112,6 +112,10 @@ class ChatWebSocketService(private val objectMapper: ObjectMapper) : TextWebSock
                 "message" -> {
                     userId?.let { broadcastMessage(it, message.payload) }
                 }
+                "get_queued_messages" -> {
+                    val userId = session.attributes["userId"] as Long
+                    sendQueuedMessages(userId, session)
+                }
                 else -> {
                     logger.warn("Unexpected message type received: ${jsonNode["type"].asText()}")
                 }
