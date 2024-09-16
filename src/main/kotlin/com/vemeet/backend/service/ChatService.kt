@@ -14,6 +14,9 @@ import com.vemeet.backend.repository.MessageRepository
 import com.vemeet.backend.repository.UserRepository
 import com.vemeet.backend.security.EncryptedData
 import com.vemeet.backend.security.EncryptionService
+import org.springframework.data.domain.Page
+import org.springframework.data.domain.PageRequest
+import org.springframework.data.domain.Sort
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.nio.ByteBuffer
@@ -70,14 +73,16 @@ class ChatService(
         return chats.map { ChatResponse.from(it) }
     }
 
-    fun getChatMessages(chatId: Long, user: User): List<MessageDTO> {
+    fun getChatMessages(chatId: Long, user: User, page: Int, size: Int): Page<MessageDTO> {
         val chat = chatRepository.findById(chatId).orElseThrow { ResourceNotFoundException("Chat not found") }
         if (chat.user1.id != user.id && chat.user2.id != user.id) {
             throw NotAllowedException("You don't have access to this chat")
         }
-        val messages = messageRepository.findByChatIdOrderByCreatedAtDesc(chatId)
+        val pageable = PageRequest.of(page, size, Sort.by("createdAt").descending())
+        val messages = messageRepository.findByChatIdOrderByCreatedAtDesc(chatId, pageable)
         return messages.map { decryptedMessage(it) }
     }
+
 
     private fun decryptedMessage(message: Message): MessageDTO {
         val decryptedContent = encryptionService.decrypt(

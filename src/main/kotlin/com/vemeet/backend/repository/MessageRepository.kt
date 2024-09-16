@@ -5,12 +5,12 @@ import com.vemeet.backend.model.ChatAsset
 import com.vemeet.backend.model.Message
 import com.vemeet.backend.model.User
 import io.lettuce.core.dynamic.annotation.Param
+import org.springframework.data.domain.Page
+import org.springframework.data.domain.Pageable
 import org.springframework.data.jpa.repository.JpaRepository
 import org.springframework.data.jpa.repository.Query
 import org.springframework.stereotype.Repository
 
-
-import java.time.Instant
 
 @Repository
 interface ChatRepository : JpaRepository<Chat, Long> {
@@ -23,8 +23,8 @@ interface ChatRepository : JpaRepository<Chat, Long> {
 
 @Repository
 interface MessageRepository : JpaRepository<Message, Long> {
-    fun findByChatIdOrderByCreatedAtDesc(chatId: Long): List<Message>
-}
+    fun findByChatIdOrderByCreatedAtDesc(chatId: Long, pageable: Pageable): Page<Message>}
+
 
 @Repository
 interface ChatAssetRepository : JpaRepository<ChatAsset, Long> {
