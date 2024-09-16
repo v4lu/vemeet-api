@@ -14,6 +14,18 @@ interface PostRepository : JpaRepository<Post, Long> {
 
     @Query("""
         SELECT p FROM Post p
+        WHERE p.user.id = :userId
+           OR p.user.id IN (
+               SELECT f.followed.id
+               FROM Follower f
+               WHERE f.follower.id = :userId
+           )
+        ORDER BY p.createdAt DESC
+    """)
+    fun findFeedPostsForUser(userId: Long, pageable: Pageable): Page<Post>
+
+    @Query("""
+        SELECT p FROM Post p
         WHERE p.user.id = :userId OR
               (p.user.isPrivate = false) OR
               (p.user.isPrivate = true AND EXISTS (
@@ -23,6 +35,8 @@ interface PostRepository : JpaRepository<Post, Long> {
         ORDER BY p.createdAt DESC
     """)
     fun findVisiblePosts(userId: Long, pageable: Pageable): Page<Post>
+
+
 
     @Query("""
         SELECT p FROM Post p
