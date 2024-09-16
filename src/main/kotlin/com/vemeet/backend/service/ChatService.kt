@@ -68,6 +68,7 @@ class ChatService(
 
         return messageDTO
     }
+
     fun getUserChats(userId: Long): List<ChatResponse> {
         val chats = chatRepository.findByUser1IdOrUser2Id(userId, userId)
         return chats.map { ChatResponse.from(it) }
