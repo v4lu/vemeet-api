@@ -70,6 +70,17 @@ class ChatWebSocketService(private val objectMapper: ObjectMapper) : TextWebSock
         }
     }
 
+    fun broadcastMessage(senderId: Long, message: String) {
+        val messageJson = objectMapper.readValue(message, MessageDTO::class.java)
+        val recipientId = messageJson.chatId // Assuming chatId represents the recipient
+
+        sendMessage(recipientId, message)
+        sendMessage(senderId, message)
+
+        logger.info("Message broadcasted from user $senderId to user $recipientId")
+    }
+
+
     fun sendMessage(recipientId: Long, message: String) {
         val session = sessions[recipientId]
         if (session != null && session.isOpen) {
@@ -88,8 +99,8 @@ class ChatWebSocketService(private val objectMapper: ObjectMapper) : TextWebSock
 
     private fun queueMessage(recipientId: Long, message: String) {
         undeliveredMessages.computeIfAbsent(recipientId) { ConcurrentLinkedQueue() }.add(message)
+        logger.info("Message queued for user $recipientId")
     }
-
     override fun handleTextMessage(session: WebSocketSession, message: TextMessage) {
         val userId = session.attributes["userId"] as? Long
         userId?.let { sessionTimeouts[it] = System.currentTimeMillis() }
@@ -98,6 +109,9 @@ class ChatWebSocketService(private val objectMapper: ObjectMapper) : TextWebSock
             when (jsonNode["type"].asText()) {
                 "ping" -> session.sendMessage(TextMessage("{\"type\":\"pong\"}"))
                 "pong" -> {} // Do nothing, just acknowledge
+                "message" -> {
+                    userId?.let { broadcastMessage(it, message.payload) }
+                }
                 else -> {
                     logger.warn("Unexpected message type received: ${jsonNode["type"].asText()}")
                 }
@@ -106,6 +120,7 @@ class ChatWebSocketService(private val objectMapper: ObjectMapper) : TextWebSock
             logger.error("Error handling message: ${e.message}")
         }
     }
+
 
     private fun pingAllSessions() {
         sessions.forEach { (userId, session) ->
