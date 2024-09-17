@@ -29,6 +29,9 @@ data class User(
     @Column(name = "inbox_locked")
     var inboxLocked: Boolean = false,
 
+    @Column(name = "swiper_mode")
+    var swiperMode: Boolean = false,
+
     var gender: String? = null,
 
     var bio: String? = null,
