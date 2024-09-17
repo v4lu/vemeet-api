@@ -16,11 +16,6 @@ spring:
   jpa:
     hibernate:
       ddl-auto: none
-  flyway:
-    enabled: true
-    locations: classpath:db/migration
-    baseline-on-migrate: true
-    url: jdbc:postgresql://${DB_HOST}/${DB_NAME}?user=${DB_USERNAME}&password=${DB_PASSWORD}&sslmode=require&connectTimeout=30
 
   data:
     redis:
