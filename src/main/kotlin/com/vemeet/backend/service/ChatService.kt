@@ -1,7 +1,7 @@
 package com.vemeet.backend.service
 
 import com.vemeet.backend.dto.ChatResponse
-import com.vemeet.backend.dto.MessageDTO
+import com.vemeet.backend.dto.MessageResponse
 import com.vemeet.backend.dto.SendMessageRequest
 import com.vemeet.backend.exception.NotAllowedException
 import com.vemeet.backend.exception.ResourceNotFoundException
@@ -30,7 +30,7 @@ class ChatService(
     private val chatRepository: ChatRepository,
 ) {
     @Transactional
-    fun sendMessage(sender: User, chatId: Long, request: SendMessageRequest): MessageDTO {
+    fun sendMessage(sender: User, chatId: Long, request: SendMessageRequest): MessageResponse {
         val chat = chatRepository.findById(chatId).orElseThrow { ResourceNotFoundException("Chat not found") }
 
         if (chat.user1.id != sender.id && chat.user2.id != sender.id) {
@@ -58,7 +58,7 @@ class ChatService(
         val savedMessage = messageRepository.save(message)
         chat.updatedAt = Instant.now()
         chatRepository.save(chat)
-        val messageDTO = decryptedMessage(savedMessage)
+        val messageDTO = decryptedMessage(savedMessage, sender)
 
 
         return messageDTO
@@ -69,18 +69,18 @@ class ChatService(
         return chats.map { ChatResponse.from(it) }
     }
 
-    fun getChatMessages(chatId: Long, user: User, page: Int, size: Int): Page<MessageDTO> {
+    fun getChatMessages(chatId: Long, user: User, page: Int, size: Int): Page<MessageResponse> {
         val chat = chatRepository.findById(chatId).orElseThrow { ResourceNotFoundException("Chat not found") }
         if (chat.user1.id != user.id && chat.user2.id != user.id) {
             throw NotAllowedException("You don't have access to this chat")
         }
         val pageable = PageRequest.of(page, size, Sort.by("createdAt").descending())
         val messages = messageRepository.findByChatIdOrderByCreatedAtDesc(chatId, pageable)
-        return messages.map { decryptedMessage(it) }
+        return messages.map { decryptedMessage(it, user) }
     }
 
 
-    private fun decryptedMessage(message: Message): MessageDTO {
+    private fun decryptedMessage(message: Message, sessionUser: User): MessageResponse {
         val decryptedContent = encryptionService.decrypt(
             EncryptedData(
                 encryptedContent = message.encryptedContent ?: ByteArray(0),
@@ -90,7 +90,7 @@ class ChatService(
             )
         )
 
-        return MessageDTO.from(message, decryptedContent)
+        return MessageResponse.from(message, decryptedContent, sessionUser)
     }
 
     @Transactional

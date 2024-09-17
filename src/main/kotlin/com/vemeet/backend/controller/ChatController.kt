@@ -78,7 +78,7 @@ class ChatController(
         @PathVariable chatId: Long,
         @RequestParam(defaultValue = "0") page: Int,
         @RequestParam(defaultValue = "15") size: Int
-    ): ResponseEntity<Page<MessageDTO>> {
+    ): ResponseEntity<Page<MessageResponse>> {
         val cognitoId = CognitoIdExtractor.extractCognitoId(authentication) ?: throw NotAllowedException("Not valid token")
         val user = userService.getSessionUser(cognitoId)
         val messages = chatService.getChatMessages(chatId, user, page, size)
@@ -123,7 +123,7 @@ class ChatController(
             ApiResponse(
                 responseCode = "200",
                 description = "Message sent successfully",
-                content = [Content(schema = Schema(implementation = MessageDTO::class))]
+                content = [Content(schema = Schema(implementation = MessageResponse::class))]
             ),
             ApiResponse(
                 responseCode = "404",
@@ -141,7 +141,7 @@ class ChatController(
         authentication: Authentication,
         @PathVariable chatId: Long,
         @RequestBody request: SendMessageRequest
-    ): ResponseEntity<MessageDTO> {
+    ): ResponseEntity<MessageResponse> {
         val cognitoId = CognitoIdExtractor.extractCognitoId(authentication)  ?: throw NotAllowedException("Not valid token")
         val user = userService.getSessionUser(cognitoId)
         val message = chatService.sendMessage(user, chatId, request)

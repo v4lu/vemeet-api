@@ -24,8 +24,7 @@ data class ChatResponse(
         }
     }
 }
-
-data class MessageDTO(
+data class MessageResponse(
     val id: Long,
     val chatId: Long,
     val sender: User,
@@ -33,11 +32,16 @@ data class MessageDTO(
     val content: String,
     val createdAt: String,
     val readAt: String?,
-    val isOneTime: Boolean
+    val isOneTime: Boolean,
+    val recipient: User,
+    val isSessionUserSender: Boolean
 ) {
     companion object {
-        fun from(message: Message, decryptedContent: String): MessageDTO {
-            return MessageDTO(
+        fun from(message: Message, decryptedContent: String, sessionUser: User): MessageResponse {
+            val recipient = if (message.sender.id == message.chat.user1.id) message.chat.user2 else message.chat.user1
+            val isSessionUserSender = message.sender.id == sessionUser.id
+
+            return MessageResponse(
                 id = message.id,
                 chatId = message.chat.id,
                 sender = message.sender,
@@ -45,12 +49,13 @@ data class MessageDTO(
                 content = decryptedContent,
                 createdAt = DateTimeFormatter.ISO_INSTANT.format(message.createdAt),
                 readAt = message.readAt?.let { DateTimeFormatter.ISO_INSTANT.format(it) },
-                isOneTime = message.isOneTime
+                isOneTime = message.isOneTime,
+                recipient = recipient,
+                isSessionUserSender = isSessionUserSender
             )
         }
     }
 }
-
 data class SendMessageRequest(
     val recipientId: Long,
     val messageType: String,
