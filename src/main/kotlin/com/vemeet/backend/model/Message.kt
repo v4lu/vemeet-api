@@ -23,8 +23,8 @@ data class Message(
     @Column(name = "encrypted_content")
     val encryptedContent: ByteArray? = null,
 
-    @Column(name = "encryption_type", nullable = false)
-    val encryptionType: String = "",
+    @Column(name = "encryption_type")
+    val encryptionType: String? = null,
 
     @Column(name = "encrypted_data_key")
     val encryptedDataKey: ByteArray? = null,

@@ -1,5 +1,6 @@
 package com.vemeet.backend.repository
 
+import com.vemeet.backend.dto.ChatWithLastMessage
 import com.vemeet.backend.model.Chat
 import com.vemeet.backend.model.ChatAsset
 import com.vemeet.backend.model.Message
@@ -18,6 +19,18 @@ interface ChatRepository : JpaRepository<Chat, Long> {
 
     @Query("SELECT c FROM Chat c WHERE (c.user1 = :user1 AND c.user2 = :user2) OR (c.user1 = :user2 AND c.user2 = :user1)")
     fun findChatBetweenUsers(@Param("user1") user1: User, @Param("user2") user2: User): Chat?
+
+    @Query("""
+        SELECT new com.vemeet.backend.dto.ChatWithLastMessage(c, m) 
+        FROM Chat c
+        LEFT JOIN Message m ON m.chat.id = c.id AND m.id = (
+            SELECT MAX(m2.id)
+            FROM Message m2
+            WHERE m2.chat.id = c.id
+        )
+        WHERE c.user1.id = :userId OR c.user2.id = :userId
+    """)
+    fun findChatsWithLastMessageByUserId(@Param("userId") userId: Long): List<ChatWithLastMessage>
 
 }
 

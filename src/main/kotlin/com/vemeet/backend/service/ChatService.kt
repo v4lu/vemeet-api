@@ -64,9 +64,15 @@ class ChatService(
         return messageDTO
     }
 
-    fun getUserChats(userId: Long): List<ChatResponse> {
-        val chats = chatRepository.findByUser1IdOrUser2Id(userId, userId)
-        return chats.map { ChatResponse.from(it) }
+    fun getUserChats(user: User): List<ChatResponse> {
+        val chatsWithLastMessages = chatRepository.findChatsWithLastMessageByUserId(user.id)
+        return chatsWithLastMessages.map { chatWithLastMessage ->
+            ChatResponse.from(
+                chat = chatWithLastMessage.chat,
+                sessionUser = user,
+                lastMessage = chatWithLastMessage.lastMessage?.let { decryptedMessage(it, user) }
+            )
+        }
     }
 
     fun getChatMessages(chatId: Long, user: User, page: Int, size: Int): Page<MessageResponse> {
@@ -81,35 +87,43 @@ class ChatService(
 
 
     private fun decryptedMessage(message: Message, sessionUser: User): MessageResponse {
-        val decryptedContent = encryptionService.decrypt(
-            EncryptedData(
-                encryptedContent = message.encryptedContent ?: ByteArray(0),
-                encryptionType = message.encryptionType,
-                encryptedDataKey = ByteBuffer.wrap(message.encryptedDataKey ?: ByteArray(0)),
-                iv = message.encryptionIv ?: ByteArray(0)
+        val decryptedContent = if (message.encryptedContent != null && message.encryptionType != null) {
+            encryptionService.decrypt(
+                EncryptedData(
+                    encryptedContent = message.encryptedContent,
+                    encryptionType = message.encryptionType,
+                    encryptedDataKey = ByteBuffer.wrap(message.encryptedDataKey ?: ByteArray(0)),
+                    iv = message.encryptionIv ?: ByteArray(0)
+                )
             )
-        )
+        } else {
+            null
+        }
 
         return MessageResponse.from(message, decryptedContent, sessionUser)
     }
 
+
     @Transactional
-    fun createChat(userId: Long, otherUserId: Long): ChatResponse {
-        val user = userRepository.findById(userId).orElseThrow { ResourceNotFoundException("User not found") }
+    fun createChat(user: User, otherUserId: Long): ChatResponse {
         val otherUser = userRepository.findById(otherUserId).orElseThrow { ResourceNotFoundException("Other user not found") }
 
         val existingChat = chatRepository.findChatBetweenUsers(user, otherUser)
         if (existingChat != null) {
-            return ChatResponse.from(existingChat)
-
+            val lastMessage = existingChat.lastMessage?.let { decryptedMessage(it, user) }
+            return ChatResponse.from(existingChat, user, lastMessage)
         }
 
-        val newChat = Chat(user1 = user, user2 = otherUser)
+        val newChat = Chat(
+            user1 = user,
+            user2 = otherUser,
+            user1SeenStatus = true,
+            user2SeenStatus = false
+        )
         val savedChat = chatRepository.save(newChat)
-        return ChatResponse.from(savedChat)
 
+        return ChatResponse.from(savedChat, user, lastMessage = null)
     }
-
 
     private fun isFollowing(followerId: Long, followedId: Long): Boolean {
         return true // Placeholder

@@ -48,7 +48,7 @@ class ChatController(
     fun getAllChats(authentication: Authentication): ResponseEntity<List<ChatResponse>> {
         val cognitoId = CognitoIdExtractor.extractCognitoId(authentication)  ?: throw NotAllowedException("Not valid token")
         val user = userService.getSessionUser(cognitoId)
-        val chats = chatService.getUserChats(user.id)
+        val chats = chatService.getUserChats(user)
         return ResponseEntity.ok(chats)
     }
 
@@ -112,7 +112,7 @@ class ChatController(
     ): ResponseEntity<ChatResponse> {
         val cognitoId = CognitoIdExtractor.extractCognitoId(authentication)  ?: throw NotAllowedException("Not valid token")
         val user = userService.getSessionUser(cognitoId)
-        val chat = chatService.createChat(user.id, request.otherUserId)
+        val chat = chatService.createChat(user, request.otherUserId)
         return ResponseEntity.ok(chat)
     }
 

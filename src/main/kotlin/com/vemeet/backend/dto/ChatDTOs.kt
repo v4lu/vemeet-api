@@ -7,29 +7,43 @@ import java.time.format.DateTimeFormatter
 
 data class ChatResponse(
     val id: Long,
-    val user1: User,
-    val user2: User,
+    val sessionUser: User,
+    val otherUser: User,
+    val lastMessage: MessageResponse?,
+    val sessionUserSeenStatus: Boolean,
+    val otherUserSeenStatus: Boolean,
     val createdAt: String,
     val updatedAt: String
 ) {
     companion object {
-        fun from(chat: Chat): ChatResponse {
+        fun from(chat: Chat, sessionUser: User, lastMessage: MessageResponse?): ChatResponse {
+            val otherUser = if (chat.user1.id == sessionUser.id) chat.user2 else chat.user1
+            val (sessionUserSeenStatus, otherUserSeenStatus) = if (sessionUser.id == chat.user1.id) {
+                chat.user1SeenStatus to chat.user2SeenStatus
+            } else {
+                chat.user2SeenStatus to chat.user1SeenStatus
+            }
+
             return ChatResponse(
                 id = chat.id,
-                user1 = chat.user1,
-                user2 = chat.user2,
+                sessionUser = sessionUser,
+                otherUser = otherUser,
+                lastMessage = lastMessage,
+                sessionUserSeenStatus = sessionUserSeenStatus,
+                otherUserSeenStatus = otherUserSeenStatus,
                 createdAt = DateTimeFormatter.ISO_INSTANT.format(chat.createdAt),
                 updatedAt = DateTimeFormatter.ISO_INSTANT.format(chat.updatedAt)
             )
         }
     }
 }
+
 data class MessageResponse(
     val id: Long,
     val chatId: Long,
     val sender: User,
     val messageType: String,
-    val content: String,
+    val content: String?,
     val createdAt: String,
     val readAt: String?,
     val isOneTime: Boolean,
@@ -37,7 +51,7 @@ data class MessageResponse(
     val isSessionUserSender: Boolean
 ) {
     companion object {
-        fun from(message: Message, decryptedContent: String, sessionUser: User): MessageResponse {
+        fun from(message: Message, decryptedContent: String?, sessionUser: User): MessageResponse {
             val recipient = if (message.sender.id == message.chat.user1.id) message.chat.user2 else message.chat.user1
             val isSessionUserSender = message.sender.id == sessionUser.id
 
@@ -65,4 +79,9 @@ data class SendMessageRequest(
 
 data class CreateChatRequest(
     val otherUserId: Long
+)
+
+data class ChatWithLastMessage(
+    val chat: Chat,
+    val lastMessage: Message?
 )
