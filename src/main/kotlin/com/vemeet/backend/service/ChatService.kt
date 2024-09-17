@@ -56,12 +56,19 @@ class ChatService(
         )
 
         val savedMessage = messageRepository.save(message)
+
         chat.updatedAt = Instant.now()
+        chat.lastMessage = savedMessage
+        if (sender.id == chat.user1.id) {
+            chat.user1SeenStatus = true
+            chat.user2SeenStatus = false
+        } else {
+            chat.user1SeenStatus = false
+            chat.user2SeenStatus = true
+        }
         chatRepository.save(chat)
-        val messageDTO = decryptedMessage(savedMessage, sender)
 
-
-        return messageDTO
+        return decryptedMessage(savedMessage, sender)
     }
 
     fun getUserChats(user: User): List<ChatResponse> {
@@ -80,6 +87,8 @@ class ChatService(
         if (chat.user1.id != user.id && chat.user2.id != user.id) {
             throw NotAllowedException("You don't have access to this chat")
         }
+        updateSeenStatus(chat, user)
+
         val pageable = PageRequest.of(page, size, Sort.by("createdAt").descending())
         val messages = messageRepository.findByChatIdOrderByCreatedAtDesc(chatId, pageable)
         return messages.map { decryptedMessage(it, user) }
@@ -127,5 +136,15 @@ class ChatService(
 
     private fun isFollowing(followerId: Long, followedId: Long): Boolean {
         return true // Placeholder
+    }
+
+     private fun updateSeenStatus(chat: Chat, user: User) {
+        if (user.id == chat.user1.id && !chat.user1SeenStatus) {
+            chat.user1SeenStatus = true
+            chatRepository.save(chat)
+        } else if (user.id == chat.user2.id && !chat.user2SeenStatus) {
+            chat.user2SeenStatus = true
+            chatRepository.save(chat)
+        }
     }
 }
