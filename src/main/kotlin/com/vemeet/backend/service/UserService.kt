@@ -77,7 +77,7 @@ class UserService(
     }
 
     fun getUserById(userId: Long): UserResponse {
-        val cachedUser = userCache.getUser(userId)
+        val cachedUser = userCache.getIDUser(userId)
 
         if (cachedUser != null) {
             return UserResponse.fromUser(cachedUser)
@@ -86,7 +86,8 @@ class UserService(
         val user = userRepository.findUserById(userId)
             ?: throw ResourceNotFoundException("User with $userId not found")
 
-        userCache.cacheUser(userId, 3600, user)
+        userCache.cacheIDUser(userId, 3600, user)
+        userCache.cacheAWSUser(user.awsCognitoId, 3600, user)
 
         return UserResponse.fromUser(user)
     }

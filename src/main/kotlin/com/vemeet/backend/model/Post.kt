@@ -9,9 +9,8 @@ data class Post(
     @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
     val id: Long = 0,
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_id")
-    val user: User = User(),
+    @Column(name = "user_id")
+    val userId: Long = 0,
 
     @Column(columnDefinition = "text")
     var content: String? = null,

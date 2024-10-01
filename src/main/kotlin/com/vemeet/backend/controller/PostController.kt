@@ -1,5 +1,7 @@
 package com.vemeet.backend.controller
 
+import com.vemeet.backend.cache.SessionCache
+import com.vemeet.backend.cache.UserCache
 import com.vemeet.backend.dto.*
 import com.vemeet.backend.exception.NotAllowedException
 import com.vemeet.backend.service.PostService
@@ -21,7 +23,9 @@ import org.springframework.web.bind.annotation.*
 @Tag(name = "Post", description = "Post endpoints")
 class PostController(
     private val postService: PostService,
-    private val userService: UserService
+    private val userService: UserService,
+    private val sessionCache: SessionCache,
+    private val userCache: UserCache
 ) {
 
     @GetMapping("/{postId}")

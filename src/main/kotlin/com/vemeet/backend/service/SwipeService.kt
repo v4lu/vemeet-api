@@ -60,14 +60,11 @@ class SwipeService(
     }
 
     fun getPotentialMatches(user: User): List<PotentialMatchResponse> {
-        // Check user preferences
         val userPreferences = userPreferenceRepository.findByUserId(user.id)
         if (userPreferences == null) {
             logger.warn("No preferences found for user ${user.id}")
             return emptyList()
         }
-
-        // Check user location
         if (user.cityLat == null || user.cityLng == null) {
             logger.warn("User ${user.id} has no location data")
             return emptyList()

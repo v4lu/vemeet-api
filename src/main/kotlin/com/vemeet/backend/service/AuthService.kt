@@ -4,6 +4,7 @@ import com.amazonaws.services.cognitoidp.model.UserNotConfirmedException
 import java.time.format.DateTimeFormatter
 import com.amazonaws.services.cognitoidp.model.UserNotFoundException
 import com.vemeet.backend.cache.SessionCache
+import com.vemeet.backend.cache.UserCache
 import com.vemeet.backend.dto.*
 import com.vemeet.backend.exception.NotConfirmedEmailException
 import com.vemeet.backend.exception.ResourceNotFoundException
@@ -22,6 +23,7 @@ class AuthService(
     private val userRepository: UserRepository,
     private val cognitoService: CognitoService,
     private val sessionCache: SessionCache,
+    private val userCache: UserCache,
 ) {
 
     fun createUser(regReq: RegisterRequest, awsCognitoId: String):  RegisterResponse  {
@@ -72,6 +74,7 @@ class AuthService(
             authResult.authenticationResult.expiresIn.toLong(),
             user
         )
+        userCache.cacheIDUser(user.id, authResult.authenticationResult.expiresIn.toLong(), user)
 
         val now = Instant.now()
         val thirtyDaysLater = now.plus(30, ChronoUnit.DAYS)

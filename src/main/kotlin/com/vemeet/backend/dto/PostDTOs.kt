@@ -2,6 +2,7 @@ package com.vemeet.backend.dto
 
 import com.vemeet.backend.model.Post
 import com.vemeet.backend.model.Reaction
+import com.vemeet.backend.model.User
 import io.swagger.v3.oas.annotations.media.Schema
 import jakarta.validation.constraints.Size
 import java.time.format.DateTimeFormatter
@@ -33,10 +34,10 @@ data class PostResponse(
     val updatedAt: String
 ){
     companion object {
-        fun fromPost(post: Post): PostResponse {
+        fun fromPost(post: Post, user: User): PostResponse {
             return PostResponse(
                 id = post.id,
-                user = UserResponse.fromUser(post.user),
+                user = UserResponse.fromUser(user),
                 content = post.content,
                 images = post.images.map { ImageResponse.fromImage(it.image) },
                 reactions = post.reactions.map { ReactionResponse.fromReaction(it) },
