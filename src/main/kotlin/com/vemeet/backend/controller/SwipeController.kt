@@ -1,10 +1,7 @@
 package com.vemeet.backend.controller
 
 
-import com.vemeet.backend.dto.ExceptionResponse
-import com.vemeet.backend.dto.PotentialMatchResponse
-import com.vemeet.backend.dto.SwipeRequest
-import com.vemeet.backend.dto.SwipeResponse
+import com.vemeet.backend.dto.*
 import com.vemeet.backend.exception.NotAllowedException
 import com.vemeet.backend.service.SwipeService
 import com.vemeet.backend.service.UserService
@@ -60,7 +57,7 @@ class SwipeController(
         responses = [
             ApiResponse(
                 responseCode = "200", description = "Successfully retrieved potential matches",
-                content = [Content(schema = Schema(implementation = PotentialMatchResponse::class))]
+                content = [Content(schema = Schema(implementation = PaginatedPotentialMatches::class))]
             ),
             ApiResponse(
                 responseCode = "401", description = "Invalid Credentials",
@@ -68,10 +65,36 @@ class SwipeController(
             )
         ]
     )
-    fun getPotentialMatches(authentication: Authentication): ResponseEntity<List<PotentialMatchResponse>> {
+    fun getPotentialMatches(
+        authentication: Authentication,
+        @RequestParam(defaultValue = "0") page: Int,
+        @RequestParam(defaultValue = "4") size: Int
+    ): ResponseEntity<PaginatedPotentialMatches> {
         val cognitoId = CognitoIdExtractor.extractCognitoId(authentication) ?: throw NotAllowedException("Not valid token")
         val user = userService.getSessionUser(cognitoId)
-        val potentialMatches = swipeService.getPotentialMatches(user)
-        return ResponseEntity.ok(potentialMatches)
+        val paginatedMatches = swipeService.getPotentialMatches(user, page, size)
+        return ResponseEntity.ok(paginatedMatches)
+    }
+
+
+    @GetMapping("/matches")
+    @Operation(
+        summary = "Get all matches for the user",
+        responses = [
+            ApiResponse(
+                responseCode = "200", description = "Successfully retrieved user matches",
+                content = [Content(schema = Schema(implementation = List::class))]
+            ),
+            ApiResponse(
+                responseCode = "401", description = "Invalid Credentials",
+                content = [Content(schema = Schema(implementation = ExceptionResponse::class))]
+            )
+        ]
+    )
+    fun getMatches(authentication: Authentication): ResponseEntity<List<UserResponse>> {
+        val cognitoId = CognitoIdExtractor.extractCognitoId(authentication) ?: throw NotAllowedException("Not valid token")
+        val user = userService.getSessionUser(cognitoId)
+        val matches = swipeService.getMatches(user)
+        return ResponseEntity.ok(matches)
     }
 }

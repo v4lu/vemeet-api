@@ -28,6 +28,9 @@ data class UserResponse(
     @Schema(description = "Whether the user's profile is private", example = "false")
     val isPrivate: Boolean,
 
+    @Schema(description = "Whether the user's can be find in swipe mode", example = "false")
+    val swiperMode: Boolean,
+
     @Schema(description = "Whether the user's inbox is locked", example = "false")
     val inboxLocked: Boolean,
 
@@ -78,6 +81,7 @@ data class UserResponse(
                 verified = user.verified,
                 isPrivate = user.isPrivate,
                 inboxLocked = user.inboxLocked,
+                swiperMode = user.swiperMode,
                 gender = user.gender,
                 bio = user.bio,
                 name = user.name,
@@ -134,10 +138,13 @@ data class UserUpdateRequest(
     val cityLng: Double?,
 
     @Schema(description = "Whether the user's profile is private", example = "false")
-    val isPrivate: Boolean?,
+    val isPrivate: Boolean,
 
     @Schema(description = "Whether the user's inbox is locked", example = "false")
     val inboxLocked: Boolean,
+
+    @Schema(description = "Whether the user's can be find in swipe mode", example = "false")
+    val swiperMode: Boolean,
 
     @Schema(description = "User's new profile image URL", example = "https://example.com/new-profile.jpg")
     @field:URL(message = "URL is required")

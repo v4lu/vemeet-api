@@ -59,3 +59,8 @@ data class PotentialMatchResponse(
     @Schema(description = "User details")
     val user: UserResponse
 )
+
+data class PaginatedPotentialMatches(
+    val matches: List<PotentialMatchResponse>,
+    val hasNextPage: Boolean
+)

@@ -53,6 +53,7 @@ class UserService(
         userUpdateRequest.cityLng?.let { user.cityLng = it }
         userUpdateRequest.isPrivate?.let { user.isPrivate = it }
         userUpdateRequest.inboxLocked.let { user.inboxLocked = it }
+        userUpdateRequest.swiperMode.let { user.swiperMode = it }
 
         when {
             userUpdateRequest.newImageUrl != null -> {

@@ -1,10 +1,7 @@
 package com.vemeet.backend.service
 
 
-import com.vemeet.backend.dto.PotentialMatchResponse
-import com.vemeet.backend.dto.SwipeRequest
-import com.vemeet.backend.dto.SwipeResponse
-import com.vemeet.backend.dto.UserResponse
+import com.vemeet.backend.dto.*
 import com.vemeet.backend.exception.ResourceNotFoundException
 import com.vemeet.backend.model.Match
 import com.vemeet.backend.model.Swipe
@@ -28,6 +25,15 @@ class SwipeService(
 ) {
 
     val logger = LoggerFactory.getLogger(SwipeService::class.java)
+
+    fun getMatches(user: User): List<UserResponse> {
+        val matches = matchRepository.findByUser1OrUser2(user, user)
+
+        return matches.map { match ->
+            val otherUser = if (match.user1.id == user.id) match.user2 else match.user1
+            UserResponse.fromUser(otherUser)
+        }
+    }
 
     @Transactional
     fun createSwipe(swiper: User, request: SwipeRequest): SwipeResponse {
@@ -59,15 +65,15 @@ class SwipeService(
         return false
     }
 
-    fun getPotentialMatches(user: User): List<PotentialMatchResponse> {
+    fun getPotentialMatches(user: User, page: Int, size: Int): PaginatedPotentialMatches {
         val userPreferences = userPreferenceRepository.findByUserId(user.id)
         if (userPreferences == null) {
             logger.warn("No preferences found for user ${user.id}")
-            return emptyList()
+            return PaginatedPotentialMatches(emptyList(), false)
         }
         if (user.cityLat == null || user.cityLng == null) {
             logger.warn("User ${user.id} has no location data")
-            return emptyList()
+            return PaginatedPotentialMatches(emptyList(), false)
         }
 
         val query = entityManager.createNativeQuery("""
@@ -75,9 +81,11 @@ class SwipeService(
         FROM potential_matches pm
         WHERE pm.user_id = :userId
         ORDER BY RANDOM()
-        LIMIT 10
+        LIMIT :limit OFFSET :offset
     """)
         query.setParameter("userId", user.id)
+        query.setParameter("limit", size + 1) // Fetch one extra to check for next page
+        query.setParameter("offset", page * size)
 
         val results = query.resultList as List<Array<Any?>>
 
@@ -104,8 +112,11 @@ class SwipeService(
             }
         }
 
-        logger.debug("Found ${potentialMatches.size} potential matches for user ${user.id}")
+        val hasNextPage = potentialMatches.size > size
+        val paginatedMatches = potentialMatches.take(size)
 
-        return potentialMatches
+        logger.debug("Found ${paginatedMatches.size} potential matches for user ${user.id} on page $page. Has next page: $hasNextPage")
+
+        return PaginatedPotentialMatches(paginatedMatches, hasNextPage)
     }
 }
