@@ -70,3 +70,30 @@ data class Match(
     @Column(name = "created_at")
     val createdAt: Instant = Instant.now()
 )
+
+@Entity
+@Table(name = "swiper_user_profiles")
+data class SwiperUserProfile(
+    @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
+    val id: Long = 0,
+
+    @Column(nullable = false, name = "user_id")
+    val userId: Long = 0,
+
+    @Column(name = "created_at")
+    val createdAt: Instant = Instant.now(),
+
+    @Column(name = "updated_at")
+    var updatedAt: Instant = Instant.now(),
+
+    @Column
+    var description: String? = null,
+
+    @Column(name = "main_image_url")
+    var mainImageUrl: String? = null,
+
+    @ElementCollection
+    @CollectionTable(name = "swiper_user_profile_images", joinColumns = [JoinColumn(name = "profile_id")])
+    @Column(name = "image_url")
+    var otherImages: MutableList<String> = mutableListOf()
+)

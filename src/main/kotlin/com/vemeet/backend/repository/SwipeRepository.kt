@@ -1,9 +1,6 @@
 package com.vemeet.backend.repository
 
-import com.vemeet.backend.model.Match
-import com.vemeet.backend.model.Swipe
-import com.vemeet.backend.model.User
-import com.vemeet.backend.model.UserPreference
+import com.vemeet.backend.model.*
 import org.springframework.data.jpa.repository.JpaRepository
 import org.springframework.stereotype.Repository
 
@@ -22,4 +19,9 @@ interface MatchRepository : JpaRepository<Match, Long> {
 @Repository
 interface UserPreferenceRepository : JpaRepository<UserPreference, Long> {
     fun findByUserId(userId: Long): UserPreference?
+}
+
+@Repository
+interface  SwipeUserProfile: JpaRepository<SwiperUserProfile, Long> {
+    fun findByUserId(userId: Long): SwiperUserProfile?
 }

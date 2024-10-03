@@ -97,4 +97,59 @@ class SwipeController(
         val matches = swipeService.getMatches(user)
         return ResponseEntity.ok(matches)
     }
+
+
+    @GetMapping("/{userId}")
+    @Operation(
+        summary = "Get user profile",
+        responses = [
+            ApiResponse(
+                responseCode = "200", description = "Successfully retrieved user profile",
+                content = [Content(schema = Schema(implementation = SwiperUserProfileResponse::class))]
+            ),
+            ApiResponse(
+                responseCode = "404", description = "Profile not found",
+                content = [Content(schema = Schema(implementation = ExceptionResponse::class))]
+            ),
+            ApiResponse(
+                responseCode = "401", description = "Invalid Credentials",
+                content = [Content(schema = Schema(implementation = ExceptionResponse::class))]
+            )
+        ]
+    )
+    fun getProfile(
+        @PathVariable userId: Long,
+        authentication: Authentication): ResponseEntity<SwiperUserProfileResponse> {
+        val profile = swipeService.getProfileByUserId(userId)
+        return ResponseEntity.ok(profile)
+    }
+
+
+    @PatchMapping
+    @Operation(
+        summary = "Partially update user profile",
+        responses = [
+            ApiResponse(
+                responseCode = "200", description = "Successfully updated user profile",
+                content = [Content(schema = Schema(implementation = SwiperUserProfileResponse::class))]
+            ),
+            ApiResponse(
+                responseCode = "404", description = "Profile not found",
+                content = [Content(schema = Schema(implementation = ExceptionResponse::class))]
+            ),
+            ApiResponse(
+                responseCode = "401", description = "Invalid Credentials",
+                content = [Content(schema = Schema(implementation = ExceptionResponse::class))]
+            )
+        ]
+    )
+    fun patchProfile(
+        authentication: Authentication,
+        @RequestBody request: SwiperUserProfileRequest
+    ): ResponseEntity<SwiperUserProfileResponse> {
+        val cognitoId = CognitoIdExtractor.extractCognitoId(authentication) ?: throw NotAllowedException("Not valid token")
+        val user = userService.getSessionUser(cognitoId)
+        val patchedProfile = swipeService.updateProfile(user, request)
+        return ResponseEntity.ok(patchedProfile)
+    }
 }

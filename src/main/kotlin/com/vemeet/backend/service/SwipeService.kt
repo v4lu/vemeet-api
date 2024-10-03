@@ -5,15 +5,14 @@ import com.vemeet.backend.dto.*
 import com.vemeet.backend.exception.ResourceNotFoundException
 import com.vemeet.backend.model.Match
 import com.vemeet.backend.model.Swipe
+import com.vemeet.backend.model.SwiperUserProfile
 import com.vemeet.backend.model.User
-import com.vemeet.backend.repository.MatchRepository
-import com.vemeet.backend.repository.SwipeRepository
-import com.vemeet.backend.repository.UserPreferenceRepository
-import com.vemeet.backend.repository.UserRepository
+import com.vemeet.backend.repository.*
 import jakarta.persistence.EntityManager
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
+import java.time.Instant
 
 @Service
 class SwipeService(
@@ -21,7 +20,8 @@ class SwipeService(
     private val userRepository: UserRepository,
     private val matchRepository: MatchRepository,
     private val entityManager: EntityManager,
-    private val userPreferenceRepository: UserPreferenceRepository
+    private val userPreferenceRepository: UserPreferenceRepository,
+    private val swiperUserProfileRepository : SwipeUserProfile
 ) {
 
     val logger = LoggerFactory.getLogger(SwipeService::class.java)
@@ -77,19 +77,17 @@ class SwipeService(
         }
 
         val query = entityManager.createNativeQuery("""
-        SELECT pm.potential_match_id, pm.distance
-        FROM potential_matches pm
-        WHERE pm.user_id = :userId
-        ORDER BY RANDOM()
-        LIMIT :limit OFFSET :offset
+    SELECT pm.potential_match_id, pm.distance
+    FROM potential_matches pm
+    WHERE pm.user_id = :userId
+    ORDER BY RANDOM()
+    LIMIT :limit OFFSET :offset
     """)
         query.setParameter("userId", user.id)
         query.setParameter("limit", size + 1) // Fetch one extra to check for next page
         query.setParameter("offset", page * size)
 
         val results = query.resultList as List<Array<Any?>>
-
-        logger.debug("Raw results for user ${user.id}: $results")
 
         val potentialMatches = results.mapNotNull { result ->
             try {
@@ -101,10 +99,19 @@ class SwipeService(
                 val potentialMatchUser = userRepository.findById(potentialMatchId)
                     .orElseThrow { ResourceNotFoundException("User not found for ID: $potentialMatchId") }
 
+                val swiperUserProfile = swiperUserProfileRepository.findByUserId(potentialMatchId)
+                if (swiperUserProfile == null) {
+                    logger.warn("SwiperUserProfile not found for user ID: $potentialMatchId. Skipping this potential match.")
+                    return@mapNotNull null
+                }
+
+                val userResponse = UserResponse.fromUser(potentialMatchUser)
+                val swiperUserProfileResponse = SwiperUserProfileResponse.fromSwiperUserProfile(swiperUserProfile, userResponse)
+
                 PotentialMatchResponse(
                     userId = potentialMatchId,
                     distance = distance,
-                    user = UserResponse.fromUser(potentialMatchUser)
+                    swiperUserProfile = swiperUserProfileResponse
                 )
             } catch (e: Exception) {
                 logger.error("Error processing potential match for user ${user.id}: ${e.message}")
@@ -119,4 +126,35 @@ class SwipeService(
 
         return PaginatedPotentialMatches(paginatedMatches, hasNextPage)
     }
+
+        fun getProfileByUserId(userId: Long): SwiperUserProfileResponse {
+        val profile = swiperUserProfileRepository.findByUserId(userId)
+            ?: throw ResourceNotFoundException("Profile not found for user with id: $userId")
+
+        val user = userRepository.findById(userId)
+            .orElseThrow { ResourceNotFoundException("User not found with id: $userId") }
+
+        val userResponse = UserResponse.fromUser(user)
+
+        return SwiperUserProfileResponse.fromSwiperUserProfile(profile, userResponse)
+    }
+
+    @Transactional
+    fun updateProfile(user: User, request: SwiperUserProfileRequest): SwiperUserProfileResponse {
+        val profile = swiperUserProfileRepository.findByUserId(user.id)
+            ?: throw ResourceNotFoundException("Profile not found for user with id: $user.id")
+
+        profile.apply {
+            description = request.description ?: description
+            mainImageUrl = request.mainImageUrl ?: mainImageUrl
+            otherImages = request.otherImages
+            updatedAt = Instant.now()
+        }
+
+        val savedProfile = swiperUserProfileRepository.save(profile)
+        return SwiperUserProfileResponse.fromSwiperUserProfile(savedProfile, UserResponse.fromUser(user))
+    }
+
+
+
 }
