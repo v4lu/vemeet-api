@@ -3,13 +3,10 @@ package com.vemeet.backend.service
 
 import com.vemeet.backend.dto.*
 import com.vemeet.backend.exception.ResourceNotFoundException
-import com.vemeet.backend.model.Match
-import com.vemeet.backend.model.Swipe
-import com.vemeet.backend.model.SwiperUserProfile
-import com.vemeet.backend.model.User
+import com.vemeet.backend.model.*
 import com.vemeet.backend.repository.*
-import jakarta.persistence.EntityManager
-import org.slf4j.LoggerFactory
+import org.springframework.data.domain.Page
+import org.springframework.data.domain.Pageable
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.time.Instant
@@ -19,12 +16,9 @@ class SwipeService(
     private val swipeRepository: SwipeRepository,
     private val userRepository: UserRepository,
     private val matchRepository: MatchRepository,
-    private val entityManager: EntityManager,
-    private val userPreferenceRepository: UserPreferenceRepository,
-    private val swiperUserProfileRepository : SwipeUserProfile
+    private val swiperUserProfileRepository : SwipeUserProfile,
+    private val potentialMatchRepository: PotentialMatchRepository
 ) {
-
-    val logger = LoggerFactory.getLogger(SwipeService::class.java)
 
     fun getMatches(user: User): List<UserResponse> {
         val matches = matchRepository.findByUser1OrUser2(user, user)
@@ -65,69 +59,23 @@ class SwipeService(
         return false
     }
 
-    fun getPotentialMatches(user: User, page: Int, size: Int): PaginatedPotentialMatches {
-        val userPreferences = userPreferenceRepository.findByUserId(user.id)
-        if (userPreferences == null) {
-            logger.warn("No preferences found for user ${user.id}")
-            return PaginatedPotentialMatches(emptyList(), false)
+    fun getPotentialMatches(user: User, pageable: Pageable): Page<SwiperPotencialUserProfileResponse> {
+        val potentialMatches = potentialMatchRepository.findByIdUserId(user.id, pageable)
+
+        return potentialMatches.map { potentialMatch ->
+            val profile = swiperUserProfileRepository.findByUserId(potentialMatch.id.potentialMatchId)
+                ?: throw ResourceNotFoundException("Profile not found for user with id: ${potentialMatch.id.potentialMatchId}")
+
+            val matchUser = userRepository.findById(potentialMatch.id.potentialMatchId)
+                .orElseThrow { ResourceNotFoundException("User not found with id: ${potentialMatch.id.potentialMatchId}") }
+
+            val userResponse = UserResponse.fromUser(matchUser)
+
+            SwiperPotencialUserProfileResponse.fromSwiperUserProfile(profile, userResponse, potentialMatch)
         }
-        if (user.cityLat == null || user.cityLng == null) {
-            logger.warn("User ${user.id} has no location data")
-            return PaginatedPotentialMatches(emptyList(), false)
-        }
-
-        val query = entityManager.createNativeQuery("""
-    SELECT pm.potential_match_id, pm.distance
-    FROM potential_matches pm
-    WHERE pm.user_id = :userId
-    ORDER BY RANDOM()
-    LIMIT :limit OFFSET :offset
-    """)
-        query.setParameter("userId", user.id)
-        query.setParameter("limit", size + 1) // Fetch one extra to check for next page
-        query.setParameter("offset", page * size)
-
-        val results = query.resultList as List<Array<Any?>>
-
-        val potentialMatches = results.mapNotNull { result ->
-            try {
-                val potentialMatchId = (result[0] as? Number)?.toLong()
-                    ?: throw IllegalStateException("Invalid potential_match_id")
-                val distance = (result[1] as? Number)?.toDouble()
-                    ?: throw IllegalStateException("Invalid distance")
-
-                val potentialMatchUser = userRepository.findById(potentialMatchId)
-                    .orElseThrow { ResourceNotFoundException("User not found for ID: $potentialMatchId") }
-
-                val swiperUserProfile = swiperUserProfileRepository.findByUserId(potentialMatchId)
-                if (swiperUserProfile == null) {
-                    logger.warn("SwiperUserProfile not found for user ID: $potentialMatchId. Skipping this potential match.")
-                    return@mapNotNull null
-                }
-
-                val userResponse = UserResponse.fromUser(potentialMatchUser)
-                val swiperUserProfileResponse = SwiperUserProfileResponse.fromSwiperUserProfile(swiperUserProfile, userResponse)
-
-                PotentialMatchResponse(
-                    userId = potentialMatchId,
-                    distance = distance,
-                    swiperUserProfile = swiperUserProfileResponse
-                )
-            } catch (e: Exception) {
-                logger.error("Error processing potential match for user ${user.id}: ${e.message}")
-                null
-            }
-        }
-
-        val hasNextPage = potentialMatches.size > size
-        val paginatedMatches = potentialMatches.take(size)
-
-        logger.debug("Found ${paginatedMatches.size} potential matches for user ${user.id} on page $page. Has next page: $hasNextPage")
-
-        return PaginatedPotentialMatches(paginatedMatches, hasNextPage)
     }
 
-        fun getProfileByUserId(userId: Long): SwiperUserProfileResponse {
+    fun getProfileByUserId(userId: Long): SwiperUserProfileResponse {
         val profile = swiperUserProfileRepository.findByUserId(userId)
             ?: throw ResourceNotFoundException("Profile not found for user with id: $userId")
 

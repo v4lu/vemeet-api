@@ -1,6 +1,8 @@
 package com.vemeet.backend.repository
 
 import com.vemeet.backend.model.*
+import org.springframework.data.domain.Page
+import org.springframework.data.domain.Pageable
 import org.springframework.data.jpa.repository.JpaRepository
 import org.springframework.stereotype.Repository
 
@@ -24,4 +26,8 @@ interface UserPreferenceRepository : JpaRepository<UserPreference, Long> {
 @Repository
 interface  SwipeUserProfile: JpaRepository<SwiperUserProfile, Long> {
     fun findByUserId(userId: Long): SwiperUserProfile?
+}
+@Repository
+interface PotentialMatchRepository : JpaRepository<PotentialMatch, PotentialMatchId> {
+    fun findByIdUserId(userId: Long, pageable: Pageable): Page<PotentialMatch>
 }

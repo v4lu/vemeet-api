@@ -1,6 +1,7 @@
 package com.vemeet.backend.model
 
 import jakarta.persistence.*
+import java.io.Serializable
 import java.time.Instant
 
 @Entity
@@ -97,3 +98,22 @@ data class SwiperUserProfile(
     @Column(name = "image_url")
     var otherImages: MutableList<String> = mutableListOf()
 )
+
+@Entity
+@Table(name = "potential_matches")
+data class PotentialMatch(
+    @EmbeddedId
+    val id: PotentialMatchId = PotentialMatchId(),
+
+    @Column(name = "distance")
+    val distance: Double = 0.0,
+)
+
+@Embeddable
+data class PotentialMatchId(
+    @Column(name = "user_id")
+    val userId: Long = 0,
+
+    @Column(name = "potential_match_id")
+    val potentialMatchId: Long = 0
+) : Serializable

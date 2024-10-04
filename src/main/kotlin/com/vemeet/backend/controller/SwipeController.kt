@@ -11,6 +11,9 @@ import io.swagger.v3.oas.annotations.media.Content
 import io.swagger.v3.oas.annotations.media.Schema
 import io.swagger.v3.oas.annotations.responses.ApiResponse
 import io.swagger.v3.oas.annotations.tags.Tag
+import org.springframework.data.domain.Page
+import org.springframework.data.domain.Pageable
+import org.springframework.data.web.PageableDefault
 import org.springframework.http.ResponseEntity
 import org.springframework.security.core.Authentication
 import org.springframework.web.bind.annotation.*
@@ -57,7 +60,7 @@ class SwipeController(
         responses = [
             ApiResponse(
                 responseCode = "200", description = "Successfully retrieved potential matches",
-                content = [Content(schema = Schema(implementation = PaginatedPotentialMatches::class))]
+                content = [Content(schema = Schema(implementation = SwiperPotencialUserProfileResponse::class))]
             ),
             ApiResponse(
                 responseCode = "401", description = "Invalid Credentials",
@@ -67,12 +70,11 @@ class SwipeController(
     )
     fun getPotentialMatches(
         authentication: Authentication,
-        @RequestParam(defaultValue = "0") page: Int,
-        @RequestParam(defaultValue = "4") size: Int
-    ): ResponseEntity<PaginatedPotentialMatches> {
+        @PageableDefault(size = 5) pageable: Pageable
+    ): ResponseEntity<Page<SwiperPotencialUserProfileResponse>> {
         val cognitoId = CognitoIdExtractor.extractCognitoId(authentication) ?: throw NotAllowedException("Not valid token")
         val user = userService.getSessionUser(cognitoId)
-        val paginatedMatches = swipeService.getPotentialMatches(user, page, size)
+        val paginatedMatches = swipeService.getPotentialMatches(user, pageable)
         return ResponseEntity.ok(paginatedMatches)
     }
 
