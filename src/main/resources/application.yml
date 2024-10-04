@@ -15,7 +15,15 @@ spring:
       leak-detection-threshold: 60000
   jpa:
     hibernate:
-      ddl-auto: none
+      ddl-auto: validate
+
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+    baseline-on-migrate: true
+    out-of-order: false
+    url: jdbc:postgresql://${DB_HOST}/${DB_NAME}?user=${DB_USERNAME}&password=${DB_PASSWORD}&sslmode=require&connectTimeout=30
+
 
   data:
     redis:
