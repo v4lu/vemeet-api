@@ -2,6 +2,7 @@ package com.vemeet.backend.repository
 
 import com.vemeet.backend.model.Recipe
 import com.vemeet.backend.model.RecipeImage
+import com.vemeet.backend.model.User
 import io.lettuce.core.dynamic.annotation.Param
 import org.springframework.data.domain.Page
 import org.springframework.data.domain.Pageable
@@ -14,6 +15,7 @@ import java.time.Instant
 interface RecipeRepository : JpaRepository<Recipe, Long> {
      override fun findAll(pageable: Pageable): Page<Recipe>
 
+     fun findByUser(user: User, pageable: Pageable): Page<Recipe>
 
     @Query("""
         SELECT r FROM Recipe r

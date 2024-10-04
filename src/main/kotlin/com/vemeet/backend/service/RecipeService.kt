@@ -16,6 +16,7 @@ import com.vemeet.backend.repository.RecipeImageRepository
 import com.vemeet.backend.repository.RecipeRepository
 import com.vemeet.backend.repository.TagRepository
 import org.springframework.data.domain.Page
+import org.springframework.data.domain.PageImpl
 import org.springframework.data.domain.Pageable
 
 @Service
@@ -63,6 +64,16 @@ class RecipeService(
 
         val savedRecipe = recipeRepository.save(recipe)
         return mapToRecipeResponse(savedRecipe)
+    }
+
+    @Transactional(readOnly = true)
+    fun getUserRecipes(userId: Long, pageable: Pageable): Page<RecipeResponse> {
+        val user = userService.getUserByIdFull(userId)
+        val recipes = recipeRepository.findByUser(user, pageable)
+
+        val mapRecipes = recipes.map { mapToRecipeResponse(it) }
+
+        return mapRecipes
     }
 
 

@@ -93,6 +93,22 @@ class UserService(
         return UserResponse.fromUser(user)
     }
 
+    fun getUserByIdFull(userId: Long): User {
+        val cachedUser = userCache.getIDUser(userId)
+
+        if (cachedUser != null) {
+            return cachedUser
+        }
+
+        val user = userRepository.findUserById(userId)
+            ?: throw ResourceNotFoundException("User with $userId not found")
+
+        userCache.cacheIDUser(userId, 3600, user)
+        userCache.cacheAWSUser(user.awsCognitoId, 3600, user)
+
+        return user
+    }
+
     private fun fetchAndCacheUser(cognitoId: String): User {
         val user = userRepository.findUserByAwsCognitoId(cognitoId)
             ?: throw ResourceNotFoundException("User not found for Cognito ID: $cognitoId")

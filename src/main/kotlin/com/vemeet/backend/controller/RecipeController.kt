@@ -111,4 +111,16 @@ class RecipeController(private val recipeService: RecipeService) {
         )
         return ResponseEntity.ok(recipes)
     }
+
+    @GetMapping("/user/{userId}")
+    @Operation(summary = "Get user recipes")
+    @ApiResponse(responseCode ="200", description = "Successful return", content = [Content(schema = Schema(implementation = Page::class))])
+    fun getPostsByUser(
+        @PathVariable userId: Long,
+        pageable: Pageable
+    ) : ResponseEntity<Page<RecipeResponse>> {
+        val recipes = recipeService.getUserRecipes(userId, pageable)
+
+        return ResponseEntity.ok(recipes)
+    }
 }
