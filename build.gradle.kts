@@ -41,6 +41,7 @@ dependencies {
 	implementation("com.amazonaws:aws-java-sdk-cognitoidp:1.12.762")
 	implementation("software.amazon.awssdk:s3:2.17.102")
 	implementation("me.paulschwarz:spring-dotenv:4.0.0")
+	implementation("org.flywaydb:flyway-core:9.22.3")
 
 	"developmentOnly"("org.springframework.boot:spring-boot-devtools")
 

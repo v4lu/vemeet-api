@@ -1,7 +1,7 @@
 package com.vemeet.backend.repository
 
-import com.vemeet.backend.model.Difficulty
 import com.vemeet.backend.model.Recipe
+import com.vemeet.backend.model.RecipeImage
 import io.lettuce.core.dynamic.annotation.Param
 import org.springframework.data.domain.Page
 import org.springframework.data.domain.Pageable
@@ -32,7 +32,7 @@ interface RecipeRepository : JpaRepository<Recipe, Long> {
         @Param("title") title: String?,
         @Param("categoryId") categoryId: Long?,
         @Param("tagId") tagId: Long?,
-        @Param("difficulty") difficulty: Difficulty?,
+        @Param("difficulty") difficulty: String?,
         @Param("minServings") minServings: Int?,
         @Param("maxServings") maxServings: Int?,
         @Param("createdAfter") createdAfter: Instant?,
@@ -40,3 +40,6 @@ interface RecipeRepository : JpaRepository<Recipe, Long> {
         pageable: Pageable
     ): Page<Recipe>
 }
+
+@Repository
+interface RecipeImageRepository: JpaRepository<RecipeImage, Long> {}

@@ -1,5 +1,6 @@
 package com.vemeet.backend.model
 
+import com.fasterxml.jackson.databind.JsonNode
 import jakarta.persistence.*
 import org.hibernate.annotations.Type
 import java.time.Duration
@@ -20,16 +21,14 @@ data class Recipe(
     @Column(nullable = false)
     var title: String = "",
 
+    @OneToMany(cascade = [CascadeType.ALL], orphanRemoval = true)
+    @JoinColumn(name = "recipe_id")
+    var ingredients: MutableList<Ingredient> = mutableListOf(),
+
     @Type(JsonBinaryType::class)
     @Column(columnDefinition = "jsonb")
-    var content: Map<String, Any>? = null,
+    var content: JsonNode? = null,
 
-    @Column(nullable = false, columnDefinition = "text")
-    var instructions: String = "",
-
-    @Type(JsonType::class)
-    @Column(columnDefinition = "text[]", nullable = false)
-    var ingredients: List<String> = emptyList(),
 
     @Column(name = "preparation_time")
     var preparationTime: Duration = Duration.ofMinutes(0),
@@ -39,8 +38,7 @@ data class Recipe(
 
     var servings: Int = 0,
 
-    @Enumerated(EnumType.STRING)
-    var difficulty: Difficulty = Difficulty.MEDIUM,
+    var difficulty: String = "",
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "category_id")
@@ -67,6 +65,16 @@ data class Recipe(
     var updatedAt: Instant = Instant.now()
 )
 
-enum class Difficulty {
-    EASY, MEDIUM, HARD
-}
+@Entity
+@Table(name = "ingredients")
+data class Ingredient(
+    @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
+    val id: Long = 0,
+
+    @Column(nullable = false)
+    var name: String = "",
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "recipe_id", nullable = false)
+    var recipe: Recipe? = null
+)

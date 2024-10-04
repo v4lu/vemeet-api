@@ -1,9 +1,10 @@
 package com.vemeet.backend.controller
 
+import com.vemeet.backend.dto.CategoryRequest
+import com.vemeet.backend.dto.CategoryResponse
 import com.vemeet.backend.dto.CreateRecipeRequest
 import com.vemeet.backend.dto.RecipeResponse
 import com.vemeet.backend.exception.NotAllowedException
-import com.vemeet.backend.model.Difficulty
 import com.vemeet.backend.service.RecipeService
 import com.vemeet.backend.utils.CognitoIdExtractor
 import io.swagger.v3.oas.annotations.Operation
@@ -57,16 +58,20 @@ class RecipeController(private val recipeService: RecipeService) {
         return ResponseEntity.ok(recipes)
     }
 
-    @PutMapping("/{id}")
-    @Operation(summary = "Update a recipe", description = "Updates an existing recipe")
-    @ApiResponse(responseCode = "200", description = "Recipe updated successfully", content = [Content(schema = Schema(implementation = RecipeResponse::class))])
-    @ApiResponse(responseCode = "404", description = "Recipe not found")
-    @ApiResponse(responseCode = "403", description = "Not allowed to update this recipe")
-    fun updateRecipe(@PathVariable id: Long, @RequestBody request: CreateRecipeRequest, authentication: Authentication): ResponseEntity<RecipeResponse> {
-        val cognitoId = CognitoIdExtractor.extractCognitoId(authentication)  ?: throw NotAllowedException("Not valid token")
+    @GetMapping("/categories")
+    @Operation(summary = "Get all categories")
+    @ApiResponse(responseCode = "200", description = "Recipes found", content = [Content(schema = Schema(implementation = CategoryResponse::class))])
+    fun getAllCategories(): ResponseEntity<List<CategoryResponse>> {
+        val recipes = recipeService.getCategories()
+        return ResponseEntity.ok(recipes)
+    }
 
-        val updatedRecipe = recipeService.updateRecipe(id, request, cognitoId)
-        return ResponseEntity.ok(updatedRecipe)
+    @PostMapping("/categories")
+    @Operation(summary = "Create new category")
+    @ApiResponse(responseCode = "200", description = "successfully created new category", content = [Content(schema = Schema(implementation = CategoryResponse::class))])
+    fun createCategory(@RequestBody request: CategoryRequest) : ResponseEntity<CategoryResponse> {
+        val category = recipeService.createCategory(request)
+        return ResponseEntity.ok(category)
     }
 
     @DeleteMapping("/{id}")
@@ -87,7 +92,7 @@ class RecipeController(private val recipeService: RecipeService) {
         @Parameter(description = "Search by title") @RequestParam title: String?,
         @Parameter(description = "Filter by category ID") @RequestParam categoryId: Long?,
         @Parameter(description = "Filter by tag ID") @RequestParam tagId: Long?,
-        @Parameter(description = "Filter by difficulty") @RequestParam difficulty: Difficulty?,
+        @Parameter(description = "Filter by difficulty") @RequestParam difficulty: String?,
         @Parameter(description = "Minimum number of servings") @RequestParam minServings: Int?,
         @Parameter(description = "Maximum number of servings") @RequestParam maxServings: Int?,
         @Parameter(description = "Created after date")

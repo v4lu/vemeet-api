@@ -4,13 +4,15 @@ import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.time.Duration
 import java.time.Instant
-import com.fasterxml.jackson.databind.ObjectMapper
 import com.vemeet.backend.dto.*
 import com.vemeet.backend.exception.NotAllowedException
 import com.vemeet.backend.exception.ResourceNotFoundException
-import com.vemeet.backend.model.Difficulty
+import com.vemeet.backend.model.Ingredient
 import com.vemeet.backend.model.Recipe
+import com.vemeet.backend.model.RecipeCategory
+import com.vemeet.backend.model.RecipeImage
 import com.vemeet.backend.repository.RecipeCategoryRepository
+import com.vemeet.backend.repository.RecipeImageRepository
 import com.vemeet.backend.repository.RecipeRepository
 import com.vemeet.backend.repository.TagRepository
 import org.springframework.data.domain.Page
@@ -22,7 +24,7 @@ class RecipeService(
     private val userService: UserService,
     private val categoryRepository: RecipeCategoryRepository,
     private val tagRepository: TagRepository,
-    private val objectMapper: ObjectMapper
+    private val recipeImageRepository: RecipeImageRepository
 ) {
 
     @Transactional
@@ -31,27 +33,38 @@ class RecipeService(
         val category = categoryRepository.findById(request.categoryId)
             .orElseThrow { ResourceNotFoundException("Category not found") }
 
+
         val recipe = Recipe(
             user = user,
             title = request.title,
-            content = request.content?.let { objectMapper.readValue(it, Map::class.java) as Map<String, Any> },
-            instructions = request.instructions,
-            ingredients = request.ingredients,
+            content = request.content,
             preparationTime = Duration.ofMinutes(request.preparationTime),
             cookingTime = Duration.ofMinutes(request.cookingTime),
             servings = request.servings,
-            difficulty = request.difficulty,
-            category = category
+            difficulty = request.difficulty.lowercase(),
+            category = category,
         )
+
+        recipe.ingredients = request.ingredients.map { Ingredient(name = it, recipe = recipe) }.toMutableList()
 
         request.tagIds?.let { tagIds ->
             val tags = tagRepository.findAllById(tagIds).toMutableSet()
             recipe.tags = tags
         }
 
+        request.imageUrls?.let { urls ->
+            recipe.images = urls.map { url ->
+                RecipeImage(
+                    recipe = recipe,
+                    imageUrl = url
+                )
+            }.toMutableList()
+        }
+
         val savedRecipe = recipeRepository.save(recipe)
         return mapToRecipeResponse(savedRecipe)
     }
+
 
     @Transactional(readOnly = true)
     fun getRecipe(id: Long): RecipeResponse {
@@ -61,43 +74,26 @@ class RecipeService(
     }
 
     @Transactional(readOnly = true)
-    fun getAllRecipes(pageable: Pageable): Page<RecipeResponse> {
-        return recipeRepository.findAll(pageable).map { mapToRecipeResponse(it) }
+    fun getCategories(): List<CategoryResponse> {
+        return categoryRepository.findAll().map { CategoryResponse(
+            id = it.id,
+            name = it.name,
+        ) }
     }
 
     @Transactional
-    fun updateRecipe(id: Long, request: CreateRecipeRequest, accessToken: String): RecipeResponse {
-        val user = userService.getSessionUser(accessToken)
-        val recipe = recipeRepository.findById(id)
-            .orElseThrow { ResourceNotFoundException("Recipe not found") }
+    fun createCategory(request: CategoryRequest): CategoryResponse {
+        val category =  categoryRepository.save(RecipeCategory(name = request.name))
 
-        if (recipe.user.id != user.id) {
-            throw NotAllowedException("You don't have permission to update this recipe")
-        }
+        return CategoryResponse(
+            id = category.id,
+            name = request.name,
+        )
+    }
 
-        val category = categoryRepository.findById(request.categoryId)
-            .orElseThrow { ResourceNotFoundException("Category not found") }
-
-        recipe.apply {
-            title = request.title
-            content = request.content?.let { objectMapper.readValue(it, Map::class.java) as Map<String, Any> }
-            instructions = request.instructions
-            ingredients = request.ingredients
-            preparationTime = Duration.ofMinutes(request.preparationTime)
-            cookingTime = Duration.ofMinutes(request.cookingTime)
-            servings = request.servings
-            difficulty = request.difficulty
-            this.category = category
-            updatedAt = Instant.now()
-        }
-
-        request.tagIds?.let { tagIds ->
-            val tags = tagRepository.findAllById(tagIds).toMutableSet()
-            recipe.tags = tags
-        }
-
-        val updatedRecipe = recipeRepository.save(recipe)
-        return mapToRecipeResponse(updatedRecipe)
+    @Transactional(readOnly = true)
+    fun getAllRecipes(pageable: Pageable): Page<RecipeResponse> {
+        return recipeRepository.findAll(pageable).map { mapToRecipeResponse(it) }
     }
 
     @Transactional
@@ -119,7 +115,7 @@ class RecipeService(
         title: String?,
         categoryId: Long?,
         tagId: Long?,
-        difficulty: Difficulty?,
+        difficulty: String?,
         minServings: Int?,
         maxServings: Int?,
         createdAfter: Instant?,
