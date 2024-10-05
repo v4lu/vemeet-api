@@ -1,25 +1,30 @@
 services:
-    cache:
-      image: redis:alpine
-      ports:
-        - "6379:6379"
-      volumes:
-        - redis_vemeet_data:/data
-      networks:
-        - ve
-    postgres:
-      image: postgres:alpine
-      ports:
-        - "5432:5432"
-      environment:
-        - POSTGRES_USER=postgres
-        - POSTGRES_PASSWORD=postgres
-        - POSTGRES_DB=postgres
-      volumes:
-        - postgres_data:/var/lib/postgresql/data
+  cache:
+    image: redis:alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_vemeet_data:/data
+    networks:
+      - core_ve
+
+  postgres:
+    image: postgres:alpine
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=postgres
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - core_ve
 
 networks:
-  ve:
+  core_ve:
+    external: true
+    name: core_ve
 
 volumes:
   redis_vemeet_data:
