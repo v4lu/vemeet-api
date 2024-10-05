@@ -7,10 +7,7 @@ import java.time.Instant
 import com.vemeet.backend.dto.*
 import com.vemeet.backend.exception.NotAllowedException
 import com.vemeet.backend.exception.ResourceNotFoundException
-import com.vemeet.backend.model.Ingredient
-import com.vemeet.backend.model.Recipe
-import com.vemeet.backend.model.RecipeCategory
-import com.vemeet.backend.model.RecipeImage
+import com.vemeet.backend.model.*
 import com.vemeet.backend.repository.RecipeCategoryRepository
 import com.vemeet.backend.repository.RecipeImageRepository
 import com.vemeet.backend.repository.RecipeRepository
@@ -63,7 +60,7 @@ class RecipeService(
         }
 
         val savedRecipe = recipeRepository.save(recipe)
-        return mapToRecipeResponse(savedRecipe)
+        return mapToRecipeResponse(savedRecipe, user)
     }
 
     @Transactional(readOnly = true)
@@ -71,7 +68,7 @@ class RecipeService(
         val user = userService.getUserByIdFull(userId)
         val recipes = recipeRepository.findByUser(user, pageable)
 
-        val mapRecipes = recipes.map { mapToRecipeResponse(it) }
+        val mapRecipes = recipes.map { mapToRecipeResponse(it, user) }
 
         return mapRecipes
     }
@@ -81,7 +78,8 @@ class RecipeService(
     fun getRecipe(id: Long): RecipeResponse {
         val recipe = recipeRepository.findById(id)
             .orElseThrow { ResourceNotFoundException("Recipe not found") }
-        return mapToRecipeResponse(recipe)
+
+        return mapToRecipeResponse(recipe, recipe.user)
     }
 
     @Transactional(readOnly = true)
@@ -104,7 +102,7 @@ class RecipeService(
 
     @Transactional(readOnly = true)
     fun getAllRecipes(pageable: Pageable): Page<RecipeResponse> {
-        return recipeRepository.findAll(pageable).map { mapToRecipeResponse(it) }
+        return recipeRepository.findAll(pageable).map { mapToRecipeResponse(it, it.user) }
     }
 
     @Transactional
@@ -131,15 +129,15 @@ class RecipeService(
         maxServings: Int?,
         createdAfter: Instant?,
         createdBefore: Instant?,
-        pageable: Pageable
+        pageable: Pageable,
     ): Page<RecipeResponse> {
         return recipeRepository.findAllWithFilters(
             title, categoryId, tagId, difficulty, minServings, maxServings, createdAfter, createdBefore, pageable
-        ).map { mapToRecipeResponse(it) }
+        ).map { mapToRecipeResponse(it, it.user) }
     }
 
 
-    private fun mapToRecipeResponse(recipe: Recipe): RecipeResponse {
-        return RecipeResponse.fromRecipe(recipe)
+    private fun mapToRecipeResponse(recipe: Recipe, user: User): RecipeResponse {
+        return RecipeResponse.fromRecipe(recipe, user)
     }
 }

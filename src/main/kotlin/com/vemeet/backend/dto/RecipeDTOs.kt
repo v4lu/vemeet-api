@@ -5,6 +5,7 @@ import com.fasterxml.jackson.annotation.JsonCreator
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.fasterxml.jackson.databind.JsonNode
 import com.vemeet.backend.model.Recipe
+import com.vemeet.backend.model.User
 import java.time.format.DateTimeFormatter
 
 @Schema(description = "Request object for creating a new recipe")
@@ -82,10 +83,13 @@ data class RecipeResponse(
     val createdAt: String,
 
     @Schema(description = "Last update date", example = "2024-08-27T10:30:00Z")
-    val updatedAt: String
+    val updatedAt: String,
+
+    @Schema(description = "User who created it")
+    val user: UserResponse,
 ) {
     companion object {
-        fun fromRecipe(recipe: Recipe): RecipeResponse {
+        fun fromRecipe(recipe: Recipe, user: User): RecipeResponse {
             return RecipeResponse(
                 id = recipe.id,
                 title = recipe.title,
@@ -100,7 +104,8 @@ data class RecipeResponse(
                 tags = recipe.tags.map { TagResponse(it.id, it.name) },
                 comments = recipe.comments.map { CommentResponse.fromComment(it) },
                 createdAt = DateTimeFormatter.ISO_INSTANT.format(recipe.createdAt),
-                updatedAt = DateTimeFormatter.ISO_INSTANT.format(recipe.updatedAt)
+                updatedAt = DateTimeFormatter.ISO_INSTANT.format(recipe.updatedAt),
+                user = UserResponse.fromUser(user)
             )
         }
     }
