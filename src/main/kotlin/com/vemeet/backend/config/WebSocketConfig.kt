@@ -1,6 +1,5 @@
 package com.vemeet.backend.config
 import com.vemeet.backend.service.ChatWebSocketService
-import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.annotation.Configuration
 import org.springframework.http.server.ServerHttpRequest
@@ -14,9 +13,6 @@ import org.springframework.web.socket.server.support.HttpSessionHandshakeInterce
 @Configuration
 @EnableWebSocket
 class WebSocketConfig : WebSocketConfigurer {
-
-    private val logger = LoggerFactory.getLogger(WebSocketConfig::class.java)
-
     @Autowired
     private lateinit var chatWebSocketService: ChatWebSocketService
 
@@ -37,20 +33,14 @@ class WebSocketConfig : WebSocketConfigurer {
                     } ?: emptyMap()
 
                     val userId = params["userId"]?.toLongOrNull()
+                    val chatId = params["chatId"]?.toLongOrNull()
                     val token = params["token"]
 
-                    logger.info("WebSocket connection attempt - UserId: $userId, Token: ${token?.take(10)}...")
-
-                    if (userId == null || token == null) {
-                        logger.error("WebSocket connection attempt failed: Missing userId or token")
+                    if (userId == null || chatId == null || token == null) {
                         return false
                     }
-
-                    // TODO: Implement token validation logic here
-                    // For now, we'll just log the attempt
-                    logger.info("Token validation would occur here for userId: $userId")
-
                     attributes["userId"] = userId
+                    attributes["chatId"] = chatId
                     attributes["userIdentifier"] = token
                     return true
                 }
