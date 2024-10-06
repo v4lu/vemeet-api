@@ -14,8 +14,8 @@ interface PostRepository : JpaRepository<Post, Long> {
 
     @Query("""
         SELECT p FROM Post p
-        WHERE p.userId = :userId
-           OR p.userId IN (
+        WHERE p.user.id = :userId
+           OR p.user.id IN (
                SELECT f.followed.id
                FROM Follower f
                WHERE f.follower.id = :userId
@@ -26,12 +26,12 @@ interface PostRepository : JpaRepository<Post, Long> {
 
     @Query("""
         SELECT p FROM Post p
-        JOIN User u ON p.userId = u.id
-        WHERE p.userId = :userId OR
+        JOIN p.user u
+        WHERE p.user.id = :userId OR
               (u.isPrivate = false) OR
               (u.isPrivate = true AND EXISTS (
                   SELECT f FROM Follower f
-                  WHERE f.followed.id = p.userId AND f.follower.id = :userId
+                  WHERE f.followed.id = p.user.id AND f.follower.id = :userId
               ))
         ORDER BY p.createdAt DESC
     """)

@@ -79,6 +79,9 @@ data class RecipeResponse(
     @Schema(description = "List of comments on this recipe")
     val comments: List<CommentResponse>,
 
+    @Schema(description = "List of reactions to the post")
+    val reactions: List<ReactionResponse>,
+
     @Schema(description = "Creation date", example = "2024-08-27T10:30:00Z")
     val createdAt: String,
 
@@ -103,6 +106,7 @@ data class RecipeResponse(
                 images = recipe.images.map { RecipeImageResponse(it.id, it.imageUrl) },
                 tags = recipe.tags.map { TagResponse(it.id, it.name) },
                 comments = recipe.comments.map { CommentResponse.fromComment(it) },
+                reactions = recipe.reactions.map { ReactionResponse.fromReaction(it) },
                 createdAt = DateTimeFormatter.ISO_INSTANT.format(recipe.createdAt),
                 updatedAt = DateTimeFormatter.ISO_INSTANT.format(recipe.updatedAt),
                 user = UserResponse.fromUser(user)

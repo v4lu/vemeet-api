@@ -8,12 +8,8 @@ import com.vemeet.backend.dto.*
 import com.vemeet.backend.exception.NotAllowedException
 import com.vemeet.backend.exception.ResourceNotFoundException
 import com.vemeet.backend.model.*
-import com.vemeet.backend.repository.RecipeCategoryRepository
-import com.vemeet.backend.repository.RecipeImageRepository
-import com.vemeet.backend.repository.RecipeRepository
-import com.vemeet.backend.repository.TagRepository
+import com.vemeet.backend.repository.*
 import org.springframework.data.domain.Page
-import org.springframework.data.domain.PageImpl
 import org.springframework.data.domain.Pageable
 
 @Service
@@ -22,7 +18,9 @@ class RecipeService(
     private val userService: UserService,
     private val categoryRepository: RecipeCategoryRepository,
     private val tagRepository: TagRepository,
-    private val recipeImageRepository: RecipeImageRepository
+    private val recipeImageRepository: RecipeImageRepository,
+    private val reactionRepository: ReactionRepository,
+    private val contentTypeRepository: ContentTypeRepository
 ) {
 
     @Transactional
@@ -68,16 +66,28 @@ class RecipeService(
         val user = userService.getUserByIdFull(userId)
         val recipes = recipeRepository.findByUser(user, pageable)
 
-        val mapRecipes = recipes.map { mapToRecipeResponse(it, user) }
+        val contentType = contentTypeRepository.findByName("recipe")
+            ?: throw ResourceNotFoundException("Content type 'recipe' not found")
 
-        return mapRecipes
+        val recipeIds = recipes.content.map { it.id }
+        val allReactions = reactionRepository.findByContentTypeAndContentIdIn(contentType, recipeIds)
+        val reactionsByRecipeId = allReactions.groupBy { it.contentId }
+
+        return recipes.map { recipe ->
+            recipe.reactions = reactionsByRecipeId[recipe.id] ?: emptyList()
+            mapToRecipeResponse(recipe, user)
+        }
     }
-
 
     @Transactional(readOnly = true)
     fun getRecipe(id: Long): RecipeResponse {
         val recipe = recipeRepository.findById(id)
             .orElseThrow { ResourceNotFoundException("Recipe not found") }
+
+        val contentType = contentTypeRepository.findByName("recipe")
+            ?: throw ResourceNotFoundException("Content type 'recipe' not found")
+
+        recipe.reactions = reactionRepository.findByContentTypeAndContentId(contentType, id)
 
         return mapToRecipeResponse(recipe, recipe.user)
     }
@@ -102,7 +112,18 @@ class RecipeService(
 
     @Transactional(readOnly = true)
     fun getAllRecipes(pageable: Pageable): Page<RecipeResponse> {
-        return recipeRepository.findAll(pageable).map { mapToRecipeResponse(it, it.user) }
+        val recipes = recipeRepository.findAll(pageable)
+        val contentType = contentTypeRepository.findByName("recipe")
+            ?: throw ResourceNotFoundException("Content type 'recipe' not found")
+
+        val recipeIds = recipes.content.map { it.id }
+        val allReactions = reactionRepository.findByContentTypeAndContentIdIn(contentType, recipeIds)
+        val reactionsByRecipeId = allReactions.groupBy { it.contentId }
+
+        return recipes.map { recipe ->
+            recipe.reactions = reactionsByRecipeId[recipe.id] ?: emptyList()
+            mapToRecipeResponse(recipe, recipe.user)
+        }
     }
 
     @Transactional
@@ -116,6 +137,52 @@ class RecipeService(
         }
 
         recipeRepository.delete(recipe)
+    }
+
+    @Transactional
+    fun removeReaction(recipeId: Long, currentUser: User): RecipeResponse {
+        val recipe = recipeRepository.findById(recipeId)
+            .orElseThrow { ResourceNotFoundException("Recipe not found") }
+
+        val contentType = contentTypeRepository.findByName("recipe")
+            ?: throw ResourceNotFoundException("Content type 'recipe' not found")
+
+        val reaction = reactionRepository.findByContentTypeAndContentIdAndUserId(contentType, recipeId, currentUser.id)
+            ?: throw ResourceNotFoundException("Reaction not found")
+
+        reactionRepository.delete(reaction)
+
+        recipe.reactions = reactionRepository.findByContentTypeAndContentId(contentType, recipeId)
+
+        return mapToRecipeResponse(recipe, recipe.user)
+    }
+
+    @Transactional
+    fun addReaction(recipeId: Long, currentUser: User, request: ReactionCreateRequest): RecipeResponse {
+        val recipe = recipeRepository.findById(recipeId)
+            .orElseThrow { ResourceNotFoundException("Recipe not found") }
+
+
+        val contentType = contentTypeRepository.findByName("recipe")
+            ?: throw ResourceNotFoundException("Content type 'recipe' not found")
+
+        val existingReaction = reactionRepository.findByContentTypeAndContentIdAndUserId(contentType, recipeId, currentUser.id)
+        if (existingReaction != null) {
+            existingReaction.reactionType = request.reactionType
+            reactionRepository.save(existingReaction)
+        } else {
+            val newReaction = Reaction(
+                user = currentUser,
+                contentType = contentType,
+                contentId = recipeId,
+                reactionType = request.reactionType
+            )
+            reactionRepository.save(newReaction)
+        }
+
+        recipe.reactions = reactionRepository.findByContentTypeAndContentId(contentType, recipeId)
+
+        return mapToRecipeResponse(recipe, recipe.user)
     }
 
 

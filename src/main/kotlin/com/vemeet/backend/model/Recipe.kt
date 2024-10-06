@@ -6,7 +6,6 @@ import org.hibernate.annotations.Type
 import java.time.Duration
 import java.time.Instant
 import com.vladmihalcea.hibernate.type.json.JsonBinaryType
-import com.vladmihalcea.hibernate.type.json.JsonType
 
 @Entity
 @Table(name = "recipes")
@@ -29,7 +28,6 @@ data class Recipe(
     @Column(columnDefinition = "jsonb")
     var content: JsonNode? = null,
 
-
     @Column(name = "preparation_time")
     var preparationTime: Duration = Duration.ofMinutes(0),
 
@@ -49,7 +47,7 @@ data class Recipe(
 
     @OneToMany(mappedBy = "recipe", cascade = [CascadeType.ALL], orphanRemoval = true)
     var comments: MutableList<Comment> = mutableListOf(),
-    
+
     @ManyToMany
     @JoinTable(
         name = "recipe_tags",
@@ -63,7 +61,11 @@ data class Recipe(
 
     @Column(name = "updated_at")
     var updatedAt: Instant = Instant.now()
-)
+) {
+    @Transient
+    var reactions: List<Reaction> = listOf()
+}
+
 
 @Entity
 @Table(name = "ingredients")

@@ -1,11 +1,9 @@
 package com.vemeet.backend.controller
 
-import com.vemeet.backend.dto.CategoryRequest
-import com.vemeet.backend.dto.CategoryResponse
-import com.vemeet.backend.dto.CreateRecipeRequest
-import com.vemeet.backend.dto.RecipeResponse
+import com.vemeet.backend.dto.*
 import com.vemeet.backend.exception.NotAllowedException
 import com.vemeet.backend.service.RecipeService
+import com.vemeet.backend.service.UserService
 import com.vemeet.backend.utils.CognitoIdExtractor
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.Parameter
@@ -26,7 +24,10 @@ import java.time.Instant
 @RestController
 @RequestMapping("/v1/recipes")
 @Tag(name = "Recipe", description = "Recipe management APIs")
-class RecipeController(private val recipeService: RecipeService) {
+class RecipeController(
+    private val recipeService: RecipeService,
+    private val userService: UserService,
+) {
 
     @PostMapping
     @Operation(summary = "Create a new recipe", description = "Creates a new recipe for the authenticated user")
@@ -123,4 +124,37 @@ class RecipeController(private val recipeService: RecipeService) {
 
         return ResponseEntity.ok(recipes)
     }
+
+    @PostMapping("/{id}/reactions")
+    @Operation(summary = "Add a reaction to a recipe", description = "Adds a reaction (like) to the specified recipe")
+    @ApiResponse(responseCode = "200", description = "Reaction added successfully", content = [Content(schema = Schema(implementation = RecipeResponse::class))])
+    @ApiResponse(responseCode = "404", description = "Recipe not found")
+    @ApiResponse(responseCode = "400", description = "Invalid reaction type")
+    fun addReaction(
+        @PathVariable id: Long,
+        @RequestBody request: ReactionCreateRequest,
+        authentication: Authentication
+    ): ResponseEntity<RecipeResponse> {
+        val cognitoId = CognitoIdExtractor.extractCognitoId(authentication)
+            ?: throw NotAllowedException("Not valid token")
+        val user = userService.getSessionUser(cognitoId)
+        val updatedRecipe = recipeService.addReaction(id, user, request)
+        return ResponseEntity.ok(updatedRecipe)
+    }
+
+    @DeleteMapping("/{id}/reactions")
+    @Operation(summary = "Remove a reaction from a recipe", description = "Removes the user's reaction from the specified recipe")
+    @ApiResponse(responseCode = "200", description = "Reaction removed successfully", content = [Content(schema = Schema(implementation = RecipeResponse::class))])
+    @ApiResponse(responseCode = "404", description = "Recipe or reaction not found")
+    fun removeReaction(
+        @PathVariable id: Long,
+        authentication: Authentication
+    ): ResponseEntity<RecipeResponse> {
+        val cognitoId = CognitoIdExtractor.extractCognitoId(authentication)
+            ?: throw NotAllowedException("Not valid token")
+        val user = userService.getSessionUser(cognitoId)
+        val updatedRecipe = recipeService.removeReaction(id, user)
+        return ResponseEntity.ok(updatedRecipe)
+    }
+
 }

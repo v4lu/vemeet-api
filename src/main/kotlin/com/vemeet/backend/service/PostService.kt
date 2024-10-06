@@ -23,31 +23,39 @@ class PostService(
     private val followerRepository: FollowerRepository,
     private val imageRepository: ImageRepository,
     private val reactionRepository: ReactionRepository,
+    private val contentTypeRepository: ContentTypeRepository,
     private val userCache: UserCache
 ) {
+
 
     @Transactional(readOnly = true)
     fun getPostById(postId: Long, currentUser: User): PostResponse {
         val post = postRepository.findById(postId)
             .orElseThrow { ResourceNotFoundException("Post not found") }
 
-        val postOwner = userCache.getIDUser(post.userId)
-            ?: userRepository.findUserById(post.userId)?.also { userCache.cacheIDUser(it.id, 3600, it) }
+        val postOwner = userCache.getIDUser(post.user.id)
+            ?: userRepository.findUserById(post.user.id)?.also { userCache.cacheIDUser(it.id, 3600, it) }
             ?: throw ResourceNotFoundException("Post owner not found")
 
         if (postOwner.isPrivate && postOwner.id != currentUser.id && !isFollowing(currentUser, postOwner)) {
             throw NotAllowedException("You don't have permission to view this post")
         }
 
+        val contentType = contentTypeRepository.findByName("post")
+            ?: throw ResourceNotFoundException("Content type 'post' not found")
+
+        post.reactions = reactionRepository.findByContentTypeAndContentId(contentType, postId)
+
         return PostResponse.fromPost(post, postOwner)
     }
+
 
     @Transactional(readOnly = true)
     fun getVisiblePosts(currentUser: User, pageable: Pageable): Page<PostResponse> {
         return postRepository.findVisiblePosts(currentUser.id, pageable)
             .map { post ->
-                val postOwner = userCache.getIDUser(post.userId)
-                    ?: userRepository.findUserById(post.userId)?.also { userCache.cacheIDUser(it.id, 3600, it) }
+                val postOwner = userCache.getIDUser(post.user.id)
+                    ?: userRepository.findUserById(post.user.id)?.also { userCache.cacheIDUser(it.id, 3600, it) }
                     ?: throw ResourceNotFoundException("Post owner not found")
                 PostResponse.fromPost(post, postOwner)
             }
@@ -68,7 +76,7 @@ class PostService(
 
 
         val post = Post(
-            userId = currentUser.id,
+            user = currentUser,
             content = request.content,
         )
 
@@ -90,7 +98,7 @@ class PostService(
         val post = postRepository.findById(postId)
             .orElseThrow { ResourceNotFoundException("Post not found") }
 
-        if (post.userId != currentUser.id) {
+        if (post.user.id != currentUser.id) {
             throw NotAllowedException("You don't have permission to update this post")
         }
 
@@ -107,7 +115,7 @@ class PostService(
         val post = postRepository.findById(postId)
             .orElseThrow { ResourceNotFoundException("Post not found") }
 
-        if (post.userId != currentUser.id) {
+        if (post.user.id != currentUser.id) {
             throw NotAllowedException("You don't have permission to delete this post")
         }
         val imageIds = post.images.map { it.image.id }
@@ -121,7 +129,7 @@ class PostService(
         val post = postRepository.findById(postId)
             .orElseThrow { ResourceNotFoundException("Post not found") }
 
-        val postOwner = userRepository.findUserById(post.userId)
+        val postOwner = userRepository.findUserById(post.user.id)
             ?: throw ResourceNotFoundException("Post owner not found")
 
         if (postOwner.isPrivate && postOwner.id != currentUser.id && !isFollowing(currentUser, postOwner)) {
@@ -132,43 +140,51 @@ class PostService(
             throw BadRequestException("Currently we support only likes")
         }
 
-        val existingReaction = reactionRepository.findByPostIdAndUserId(postId, currentUser.id)
+        val contentType = contentTypeRepository.findByName("post")
+            ?: throw ResourceNotFoundException("Content type 'post' not found")
+
+        val existingReaction = reactionRepository.findByContentTypeAndContentIdAndUserId(contentType, postId, currentUser.id)
         if (existingReaction != null) {
             existingReaction.reactionType = request.reactionType
             reactionRepository.save(existingReaction)
         } else {
             val newReaction = Reaction(
                 user = currentUser,
-                post = post,
+                contentType = contentType,
+                contentId = postId,
                 reactionType = request.reactionType
             )
             reactionRepository.save(newReaction)
-            post.reactions.add(newReaction)
         }
 
-        return PostResponse.fromPost(post,currentUser)
-    }
+        post.reactions = reactionRepository.findByContentTypeAndContentId(contentType, postId)
 
+        return PostResponse.fromPost(post, postOwner)
+    }
 
     @Transactional
     fun removeReaction(postId: Long, currentUser: User): PostResponse {
         val post = postRepository.findById(postId)
             .orElseThrow { ResourceNotFoundException("Post not found") }
 
-        val reaction = reactionRepository.findByPostIdAndUserId(postId, currentUser.id)
+        val contentType = contentTypeRepository.findByName("post")
+            ?: throw ResourceNotFoundException("Content type 'post' not found")
+
+        val reaction = reactionRepository.findByContentTypeAndContentIdAndUserId(contentType, postId, currentUser.id)
             ?: throw ResourceNotFoundException("Reaction not found")
 
         reactionRepository.delete(reaction)
-        post.reactions.remove(reaction)
 
-        return PostResponse.fromPost(post, currentUser)
+        post.reactions = reactionRepository.findByContentTypeAndContentId(contentType, postId)
+
+        return PostResponse.fromPost(post, post.user)
     }
 
     private fun isFollowing(follower: User, followed: User): Boolean {
         return followerRepository.existsByFollowerIdAndFollowedId(follower.id, followed.id)
     }
 
-    @Transactional
+    @Transactional(readOnly = true)
     fun getUserPosts(userId: Long, pageable: Pageable): Page<PostResponse> {
         val posts = postRepository.findAllByUserIdOrderByCreatedAtDesc(userId, pageable)
 
@@ -176,6 +192,12 @@ class PostService(
             ?: userRepository.findUserById(userId)?.also { userCache.cacheIDUser(it.id, 3600, it) }
             ?: throw ResourceNotFoundException("Post owner not found")
 
-        return posts.map { PostResponse.fromPost(it, user) }
+        val contentType = contentTypeRepository.findByName("post")
+            ?: throw ResourceNotFoundException("Content type 'post' not found")
+
+        return posts.map { post ->
+            post.reactions = reactionRepository.findByContentTypeAndContentId(contentType, post.id)
+            PostResponse.fromPost(post, user)
+        }
     }
 }

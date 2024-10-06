@@ -10,14 +10,17 @@ data class Reaction(
     val id: Long = 0,
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_id")
+    @JoinColumn(name = "user_id", nullable = false)
     val user: User = User(),
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "post_id")
-    val post: Post = Post(),
+    @JoinColumn(name = "content_type_id", nullable = false)
+    val contentType: ContentType = ContentType(),
 
-    @Column(name = "reaction_type")
+    @Column(name = "content_id", nullable = false)
+    val contentId: Long = 0,
+
+    @Column(name = "reaction_type", nullable = false)
     var reactionType: String = "",
 
     @Column(name = "created_at")
