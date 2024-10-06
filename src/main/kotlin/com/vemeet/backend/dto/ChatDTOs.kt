@@ -1,5 +1,6 @@
 package com.vemeet.backend.dto
 
+import com.fasterxml.jackson.annotation.JsonProperty
 import com.vemeet.backend.model.Chat
 import com.vemeet.backend.model.Message
 import com.vemeet.backend.model.User
@@ -84,4 +85,16 @@ data class CreateChatRequest(
 data class ChatWithLastMessage(
     val chat: Chat,
     val lastMessage: Message?
+)
+
+
+data class EncryptionResponse(
+    @JsonProperty("encrypted_message")
+    val encryptedMessage: String,
+
+    @JsonProperty("encrypted_data_key")
+    val encryptedDataKey: String,
+
+    @JsonProperty("key_version")
+    val keyVersion: Int
 )

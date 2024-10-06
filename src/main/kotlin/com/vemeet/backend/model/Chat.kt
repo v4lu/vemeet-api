@@ -9,11 +9,11 @@ data class Chat(
     @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
     val id: Long = 0,
 
-    @ManyToOne(fetch = FetchType.EAGER, cascade = [CascadeType.ALL])
+    @ManyToOne(fetch = FetchType.EAGER, cascade = [CascadeType.MERGE])
     @JoinColumn(name = "user1_id", nullable = false)
     val user1: User = User(),
 
-    @ManyToOne(fetch = FetchType.EAGER, cascade = [CascadeType.ALL])
+    @ManyToOne(fetch = FetchType.EAGER, cascade = [CascadeType.MERGE])
     @JoinColumn(name = "user2_id", nullable = false)
     val user2: User = User(),
 

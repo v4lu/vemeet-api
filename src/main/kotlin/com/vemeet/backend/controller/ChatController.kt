@@ -45,7 +45,7 @@ class ChatController(
             )
         ]
     )
-    fun getAllChats(authentication: Authentication): ResponseEntity<List<ChatResponse>> {
+    suspend fun getAllChats(authentication: Authentication): ResponseEntity<List<ChatResponse>> {
         val cognitoId = CognitoIdExtractor.extractCognitoId(authentication)  ?: throw NotAllowedException("Not valid token")
         val user = userService.getSessionUser(cognitoId)
         val chats = chatService.getUserChats(user)
@@ -106,13 +106,13 @@ class ChatController(
             )
         ]
     )
-    fun createChat(
+    suspend fun createChat(
         authentication: Authentication,
         @RequestBody request: CreateChatRequest
     ): ResponseEntity<ChatResponse> {
         val cognitoId = CognitoIdExtractor.extractCognitoId(authentication)  ?: throw NotAllowedException("Not valid token")
         val user = userService.getSessionUser(cognitoId)
-        val chat = chatService.createChat(user, request.otherUserId)
+        val chat = chatService.createChat(user.id, request.otherUserId)
         return ResponseEntity.ok(chat)
     }
 
@@ -137,7 +137,7 @@ class ChatController(
             )
         ]
     )
-    fun sendMessage(
+    suspend fun sendMessage(
         authentication: Authentication,
         @PathVariable chatId: Long,
         @RequestBody request: SendMessageRequest

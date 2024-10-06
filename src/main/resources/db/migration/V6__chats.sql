@@ -15,9 +15,8 @@ CREATE TABLE IF NOT EXISTS messages (
     sender_id bigint NOT NULL REFERENCES users(id),
     message_type text NOT NULL,
     encrypted_content bytea,
-    encryption_type text NOT NULL,
-    encryption_iv bytea,
     encrypted_data_key bytea,
+    encryption_version integer,
     created_at timestamp with time zone DEFAULT now(),
     read_at timestamp with time zone,
     is_one_time boolean DEFAULT false

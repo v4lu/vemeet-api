@@ -1,6 +1,7 @@
 package com.vemeet.backend.service
 
 import com.vemeet.backend.dto.ChatResponse
+import com.vemeet.backend.dto.EncryptionResponse
 import com.vemeet.backend.dto.MessageResponse
 import com.vemeet.backend.dto.SendMessageRequest
 import com.vemeet.backend.exception.NotAllowedException
@@ -11,27 +12,35 @@ import com.vemeet.backend.model.User
 import com.vemeet.backend.repository.ChatRepository
 import com.vemeet.backend.repository.MessageRepository
 import com.vemeet.backend.repository.UserRepository
-import com.vemeet.backend.security.EncryptedData
-import com.vemeet.backend.security.EncryptionService
+import jakarta.persistence.EntityManager
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
+import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.withContext
 import org.springframework.data.domain.Page
+import org.springframework.data.domain.PageImpl
 import org.springframework.data.domain.PageRequest
 import org.springframework.data.domain.Sort
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
-import java.nio.ByteBuffer
+import org.springframework.web.reactive.function.client.WebClient
+import org.springframework.web.reactive.function.client.awaitBody
 import java.time.Instant
-
+import java.util.*
 
 @Service
 class ChatService(
     private val messageRepository: MessageRepository,
     private val userRepository: UserRepository,
-    private val encryptionService: EncryptionService,
     private val chatRepository: ChatRepository,
+    private val webClient: WebClient,
+    private val entityManager: EntityManager
 ) {
     @Transactional
-    fun sendMessage(sender: User, chatId: Long, request: SendMessageRequest): MessageResponse {
-        val chat = chatRepository.findById(chatId).orElseThrow { ResourceNotFoundException("Chat not found") }
+    suspend fun sendMessage(sender: User, chatId: Long, request: SendMessageRequest): MessageResponse {
+        val chat = withContext(Dispatchers.IO) {
+            chatRepository.findById(chatId)
+        }.orElseThrow { ResourceNotFoundException("Chat not found") }
 
         if (chat.user1.id != sender.id && chat.user2.id != sender.id) {
             throw NotAllowedException("You don't have access to this chat")
@@ -43,19 +52,30 @@ class ChatService(
             throw NotAllowedException("Cannot send message to this user")
         }
 
-        val encryptedData = encryptionService.encrypt(request.content)
+        // Call external encryption service
+        val encryptionResponse = try {
+            webClient.post()
+                .uri("http://localhost:9002/v1/crypto/encrypt")
+                .bodyValue(mapOf("message" to request.content))
+                .retrieve()
+                .awaitBody<EncryptionResponse>()
+        } catch (e: Exception) {
+            throw RuntimeException("Failed to encrypt message: ${e.message}")
+        }
+
         val message = Message(
             chat = chat,
             sender = sender,
             messageType = request.messageType,
-            encryptedContent = encryptedData.encryptedContent,
-            encryptionType = encryptedData.encryptionType,
-            encryptedDataKey = encryptedData.encryptedDataKey.array(),
-            encryptionIv = encryptedData.iv,
+            encryptedContent = if (request.content.isNotBlank()) Base64.getDecoder().decode(encryptionResponse.encryptedMessage) else null,
+            encryptedDataKey = Base64.getDecoder().decode(encryptionResponse.encryptedDataKey),
+            encryptionVersion = encryptionResponse.keyVersion,
             isOneTime = request.isOneTime
         )
 
-        val savedMessage = messageRepository.save(message)
+        val savedMessage = withContext(Dispatchers.IO) {
+            messageRepository.save(message)
+        }
 
         chat.updatedAt = Instant.now()
         chat.lastMessage = savedMessage
@@ -66,13 +86,17 @@ class ChatService(
             chat.user1SeenStatus = false
             chat.user2SeenStatus = true
         }
-        chatRepository.save(chat)
+        withContext(Dispatchers.IO) {
+            chatRepository.save(chat)
+        }
 
         return decryptedMessage(savedMessage, sender)
     }
 
-    fun getUserChats(user: User): List<ChatResponse> {
-        val chatsWithLastMessages = chatRepository.findChatsWithLastMessageByUserId(user.id)
+    suspend fun getUserChats(user: User): List<ChatResponse> {
+        val chatsWithLastMessages = withContext(Dispatchers.IO) {
+            chatRepository.findChatsWithLastMessageByUserId(user.id)
+        }
         return chatsWithLastMessages.map { chatWithLastMessage ->
             ChatResponse.from(
                 chat = chatWithLastMessage.chat,
@@ -90,21 +114,34 @@ class ChatService(
         updateSeenStatus(chat, user)
 
         val pageable = PageRequest.of(page, size, Sort.by("createdAt").descending())
-        val messages = messageRepository.findByChatIdOrderByCreatedAtDesc(chatId, pageable)
-        return messages.map { decryptedMessage(it, user) }
+        val messagesPage = messageRepository.findByChatIdOrderByCreatedAtDesc(chatId, pageable)
+
+        // Use runBlocking to bridge between non-suspend and suspend functions
+        val decryptedMessages = runBlocking(Dispatchers.Default) {
+            messagesPage.content.map { message ->
+                async { decryptedMessage(message, user) }
+            }.map { it.await() }
+        }
+
+        // Create a new Page with decrypted messages
+        return PageImpl(decryptedMessages, pageable, messagesPage.totalElements)
     }
 
-
-    private fun decryptedMessage(message: Message, sessionUser: User): MessageResponse {
-        val decryptedContent = if (message.encryptedContent != null && message.encryptionType != null) {
-            encryptionService.decrypt(
-                EncryptedData(
-                    encryptedContent = message.encryptedContent,
-                    encryptionType = message.encryptionType,
-                    encryptedDataKey = ByteBuffer.wrap(message.encryptedDataKey ?: ByteArray(0)),
-                    iv = message.encryptionIv ?: ByteArray(0)
-                )
-            )
+    private suspend fun decryptedMessage(message: Message, sessionUser: User): MessageResponse {
+        val decryptedContent = if (message.encryptedContent != null) {
+            try {
+                val decryptionResponse = webClient.post()
+                    .uri("http://localhost:9002/v1/crypto/decrypt")
+                    .bodyValue(mapOf(
+                        "encrypted_message" to Base64.getEncoder().encodeToString(message.encryptedContent),
+                        "encrypted_data_key" to Base64.getEncoder().encodeToString(message.encryptedDataKey)
+                    ))
+                    .retrieve()
+                    .awaitBody<Map<String, String>>()
+                decryptionResponse["decrypted_message"]
+            } catch (e: Exception) {
+                throw RuntimeException("Failed to decrypt message: ${e.message}")
+            }
         } else {
             null
         }
@@ -114,10 +151,18 @@ class ChatService(
 
 
     @Transactional
-    fun createChat(user: User, otherUserId: Long): ChatResponse {
-        val otherUser = userRepository.findById(otherUserId).orElseThrow { ResourceNotFoundException("Other user not found") }
+    suspend fun createChat(userId: Long, otherUserId: Long): ChatResponse {
+        val user = withContext(Dispatchers.IO) {
+            userRepository.findById(userId)
+        }.orElseThrow { ResourceNotFoundException("User not found") }
 
-        val existingChat = chatRepository.findChatBetweenUsers(user, otherUser)
+        val otherUser = withContext(Dispatchers.IO) {
+            userRepository.findById(otherUserId)
+        }.orElseThrow { ResourceNotFoundException("Other user not found") }
+
+        val existingChat = withContext(Dispatchers.IO) {
+            chatRepository.findChatBetweenUsers(user, otherUser)
+        }
         if (existingChat != null) {
             val lastMessage = existingChat.lastMessage?.let { decryptedMessage(it, user) }
             return ChatResponse.from(existingChat, user, lastMessage)
@@ -129,7 +174,10 @@ class ChatService(
             user1SeenStatus = true,
             user2SeenStatus = false
         )
-        val savedChat = chatRepository.save(newChat)
+
+        val savedChat = withContext(Dispatchers.IO) {
+            chatRepository.save(newChat)
+        }
 
         return ChatResponse.from(savedChat, user, lastMessage = null)
     }
@@ -138,7 +186,7 @@ class ChatService(
         return true // Placeholder
     }
 
-     private fun updateSeenStatus(chat: Chat, user: User) {
+     private  fun updateSeenStatus(chat: Chat, user: User) {
         if (user.id == chat.user1.id && !chat.user1SeenStatus) {
             chat.user1SeenStatus = true
             chatRepository.save(chat)

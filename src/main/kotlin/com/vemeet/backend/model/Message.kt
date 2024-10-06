@@ -23,14 +23,11 @@ data class Message(
     @Column(name = "encrypted_content")
     val encryptedContent: ByteArray? = null,
 
-    @Column(name = "encryption_type")
-    val encryptionType: String? = null,
-
     @Column(name = "encrypted_data_key")
     val encryptedDataKey: ByteArray? = null,
 
-    @Column(name = "encryption_iv")
-    val encryptionIv: ByteArray? = null,
+    @Column(name = "encryption_version")
+    val encryptionVersion: Int? = null,
 
     @Column(name = "created_at")
     val createdAt: Instant = Instant.now(),
@@ -55,15 +52,11 @@ data class Message(
             if (other.encryptedContent == null) return false
             if (!encryptedContent.contentEquals(other.encryptedContent)) return false
         } else if (other.encryptedContent != null) return false
-        if (encryptionType != other.encryptionType) return false
         if (encryptedDataKey != null) {
             if (other.encryptedDataKey == null) return false
             if (!encryptedDataKey.contentEquals(other.encryptedDataKey)) return false
         } else if (other.encryptedDataKey != null) return false
-        if (encryptionIv != null) {
-            if (other.encryptionIv == null) return false
-            if (!encryptionIv.contentEquals(other.encryptionIv)) return false
-        } else if (other.encryptionIv != null) return false
+        if (encryptionVersion != other.encryptionVersion) return false
         if (createdAt != other.createdAt) return false
         if (readAt != other.readAt) return false
         if (isOneTime != other.isOneTime) return false
@@ -77,12 +70,12 @@ data class Message(
         result = 31 * result + sender.hashCode()
         result = 31 * result + messageType.hashCode()
         result = 31 * result + (encryptedContent?.contentHashCode() ?: 0)
-        result = 31 * result + encryptionType.hashCode()
         result = 31 * result + (encryptedDataKey?.contentHashCode() ?: 0)
-        result = 31 * result + (encryptionIv?.contentHashCode() ?: 0)
+        result = 31 * result + (encryptionVersion ?: 0)
         result = 31 * result + createdAt.hashCode()
         result = 31 * result + (readAt?.hashCode() ?: 0)
         result = 31 * result + isOneTime.hashCode()
         return result
     }
+
 }
