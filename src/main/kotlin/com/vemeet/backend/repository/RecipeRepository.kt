@@ -41,6 +41,18 @@ interface RecipeRepository : JpaRepository<Recipe, Long> {
         @Param("createdBefore") createdBefore: Instant?,
         pageable: Pageable
     ): Page<Recipe>
+
+    @Query("""
+        SELECT r FROM Recipe r
+        WHERE r.user.id = :userId
+           OR r.user.id IN (
+               SELECT f.followed.id
+               FROM Follower f
+               WHERE f.follower.id = :userId
+           )
+        ORDER BY r.createdAt DESC
+    """)
+    fun findFeedRecipesForUser(userId: Long, pageable: Pageable): Page<Recipe>
 }
 
 @Repository
