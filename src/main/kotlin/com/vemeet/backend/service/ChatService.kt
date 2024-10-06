@@ -1,5 +1,6 @@
 package com.vemeet.backend.service
 
+import com.fasterxml.jackson.databind.ObjectMapper
 import com.vemeet.backend.dto.ChatResponse
 import com.vemeet.backend.dto.EncryptionResponse
 import com.vemeet.backend.dto.MessageResponse
@@ -12,7 +13,6 @@ import com.vemeet.backend.model.User
 import com.vemeet.backend.repository.ChatRepository
 import com.vemeet.backend.repository.MessageRepository
 import com.vemeet.backend.repository.UserRepository
-import jakarta.persistence.EntityManager
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.runBlocking
@@ -34,7 +34,8 @@ class ChatService(
     private val userRepository: UserRepository,
     private val chatRepository: ChatRepository,
     private val webClient: WebClient,
-    private val entityManager: EntityManager
+    private val objectMapper: ObjectMapper,
+    private val chatWebSocketService: ChatWebSocketService,
 ) {
     @Transactional
     suspend fun sendMessage(sender: User, chatId: Long, request: SendMessageRequest): MessageResponse {
@@ -90,7 +91,9 @@ class ChatService(
             chatRepository.save(chat)
         }
 
-        return decryptedMessage(savedMessage, sender)
+        val res = decryptedMessage(savedMessage, sender)
+        chatWebSocketService.sendMessage(recipient.id, res)
+        return res
     }
 
     suspend fun getUserChats(user: User): List<ChatResponse> {
