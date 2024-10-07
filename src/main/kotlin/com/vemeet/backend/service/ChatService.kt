@@ -7,9 +7,7 @@ import com.vemeet.backend.dto.MessageResponse
 import com.vemeet.backend.dto.SendMessageRequest
 import com.vemeet.backend.exception.NotAllowedException
 import com.vemeet.backend.exception.ResourceNotFoundException
-import com.vemeet.backend.model.Chat
-import com.vemeet.backend.model.Message
-import com.vemeet.backend.model.User
+import com.vemeet.backend.model.*
 import com.vemeet.backend.repository.ChatRepository
 import com.vemeet.backend.repository.MessageRepository
 import com.vemeet.backend.repository.UserRepository
@@ -36,6 +34,7 @@ class ChatService(
     private val webClient: WebClient,
     private val objectMapper: ObjectMapper,
     private val chatWebSocketService: ChatWebSocketService,
+    private val notificationService: NotificationService,
 ) {
     @Transactional
     suspend fun sendMessage(sender: User, chatId: Long, request: SendMessageRequest): MessageResponse {
@@ -91,6 +90,8 @@ class ChatService(
             chatRepository.save(chat)
         }
 
+        val content = "New message from ${sender.username}"
+        notificationService.createNotification(recipient.id, NotificationTypeEnum.NEW_MESSAGE.toString().lowercase(), content)
         val res = decryptedMessage(savedMessage, sender)
         chatWebSocketService.sendMessage(recipient.id, res)
         return res

@@ -43,7 +43,6 @@ class UserController(
     fun getSession(authentication: Authentication): ResponseEntity<UserResponse> {
         val cognitoId = CognitoIdExtractor.extractCognitoId(authentication)  ?: throw NotAllowedException("Not valid token")
         val user = userService.getSessionUser(cognitoId)
-        println(cognitoId)
 
         return ResponseEntity.ok(UserResponse.fromUser(user))
     }
