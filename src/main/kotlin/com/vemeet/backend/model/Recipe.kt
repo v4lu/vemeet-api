@@ -20,8 +20,7 @@ data class Recipe(
     @Column(nullable = false)
     var title: String = "",
 
-    @OneToMany(cascade = [CascadeType.ALL], orphanRemoval = true)
-    @JoinColumn(name = "recipe_id")
+    @OneToMany(mappedBy = "recipe", cascade = [CascadeType.ALL], orphanRemoval = true)
     var ingredients: MutableList<Ingredient> = mutableListOf(),
 
     @Type(JsonBinaryType::class)
@@ -76,7 +75,7 @@ data class Ingredient(
     @Column(nullable = false)
     var name: String = "",
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne
     @JoinColumn(name = "recipe_id", nullable = false)
-    var recipe: Recipe? = null
+    var recipe: Recipe = Recipe(),
 )

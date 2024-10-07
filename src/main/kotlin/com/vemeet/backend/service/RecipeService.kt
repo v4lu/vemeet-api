@@ -203,6 +203,50 @@ class RecipeService(
         ).map { mapToRecipeResponse(it, it.user) }
     }
 
+    @Transactional
+    fun updateRecipe(id: Long, request: UpdateRecipeRequest, accessToken: String): RecipeResponse {
+        val user = userService.getSessionUser(accessToken)
+        val recipe = recipeRepository.findById(id)
+            .orElseThrow { ResourceNotFoundException("Recipe not found") }
+
+        if (recipe.user.id != user.id) {
+            throw NotAllowedException("You don't have permission to update this recipe")
+        }
+
+        request.title?.let { recipe.title = it }
+        request.content?.let { recipe.content = it }
+        request.preparationTime?.let { recipe.preparationTime = Duration.ofMinutes(it) }
+        request.cookingTime?.let { recipe.cookingTime = Duration.ofMinutes(it) }
+        request.servings?.let { recipe.servings = it }
+        request.difficulty?.let { recipe.difficulty = it.lowercase() }
+
+        request.categoryId?.let { categoryId ->
+            val category = categoryRepository.findById(categoryId)
+                .orElseThrow { ResourceNotFoundException("Category not found") }
+            recipe.category = category
+        }
+
+        request.ingredients?.let { newIngredients ->
+            recipe.ingredients.clear()
+            recipe.ingredients.addAll(newIngredients.map { Ingredient(name = it, recipe = recipe) })
+        }
+
+        request.tagIds?.let { tagIds ->
+            val tags = tagRepository.findAllById(tagIds).toMutableSet()
+            recipe.tags = tags
+        }
+
+        request.imageUrls?.let { urls ->
+            recipe.images.clear()
+            recipe.images.addAll(urls.map { url -> RecipeImage(recipe = recipe, imageUrl = url) })
+        }
+
+        recipe.updatedAt = Instant.now()
+
+        val savedRecipe = recipeRepository.save(recipe)
+        return mapToRecipeResponse(savedRecipe, user)
+    }
+
 
     private fun mapToRecipeResponse(recipe: Recipe, user: User): RecipeResponse {
         return RecipeResponse.fromRecipe(recipe, user)

@@ -157,4 +157,19 @@ class RecipeController(
         return ResponseEntity.ok(updatedRecipe)
     }
 
+    @PatchMapping("/{id}")
+    @Operation(summary = "Update an existing recipe", description = "Updates an existing recipe for the authenticated user")
+    @ApiResponse(responseCode = "200", description = "Recipe updated successfully", content = [Content(schema = Schema(implementation = RecipeResponse::class))])
+    @ApiResponse(responseCode = "404", description = "Recipe not found")
+    @ApiResponse(responseCode = "403", description = "Not allowed to update this recipe")
+    fun updateRecipe(
+        @PathVariable id: Long,
+        @RequestBody request: UpdateRecipeRequest,
+        authentication: Authentication
+    ): ResponseEntity<RecipeResponse> {
+        val cognitoId = CognitoIdExtractor.extractCognitoId(authentication) ?: throw NotAllowedException("Not valid token")
+        val updatedRecipe = recipeService.updateRecipe(id, request, cognitoId)
+        return ResponseEntity.ok(updatedRecipe)
+    }
+
 }

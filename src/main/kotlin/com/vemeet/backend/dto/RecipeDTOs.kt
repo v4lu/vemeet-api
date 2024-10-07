@@ -115,6 +115,38 @@ data class RecipeResponse(
     }
 }
 
+@Schema(description = "Request object for updating an existing recipe")
+data class UpdateRecipeRequest @JsonCreator constructor(
+    @Schema(description = "Recipe title", example = "Updated Vegan Chocolate Cake", required = false)
+    @JsonProperty("title") val title: String?,
+
+    @Schema(description = "Recipe content as a JSON object", example = """{"introduction": "An updated delicious vegan chocolate cake", "notes": "Now best served with vegan whipped cream"}""", required = false)
+    @JsonProperty("content") val content: JsonNode?,
+
+    @Schema(description = "List of ingredients", example = """["200g flour", "60g cocoa powder", "220ml plant milk"]""", required = false)
+    @JsonProperty("ingredients") val ingredients: List<String>?,
+
+    @Schema(description = "Preparation time in minutes", example = "20", required = false)
+    @JsonProperty("preparationTime") val preparationTime: Long?,
+
+    @Schema(description = "Cooking time in minutes", example = "35", required = false)
+    @JsonProperty("cookingTime") val cookingTime: Long?,
+
+    @Schema(description = "List of image URLs", example = """["http://example.com/updated_image1.jpg", "http://example.com/updated_image2.jpg"]""", required = false)
+    @JsonProperty("imageUrls") val imageUrls: List<String>?,
+
+    @Schema(description = "Number of servings", example = "10", required = false)
+    @JsonProperty("servings") val servings: Int?,
+
+    @Schema(description = "Recipe difficulty", example = "HARD", required = false)
+    @JsonProperty("difficulty") val difficulty: String?,
+
+    @Schema(description = "Category ID", example = "2", required = false)
+    @JsonProperty("categoryId") val categoryId: Long?,
+
+    @Schema(description = "List of tag IDs", example = "[2, 3, 4]", required = false)
+    @JsonProperty("tagIds") val tagIds: List<Long>?
+)
 
 @Schema(description = "Create Category Request")
 data class CategoryRequest (
