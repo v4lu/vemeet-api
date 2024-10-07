@@ -60,7 +60,10 @@ data class VeganLocation(
     var updatedAt: Instant = Instant.now(),
 
     @OneToMany(mappedBy = "location", cascade = [CascadeType.ALL], orphanRemoval = true)
-    var images: MutableList<LocationImage> = mutableListOf()
+    var images: MutableList<LocationImage> = mutableListOf(),
+
+    @OneToMany(mappedBy = "location", cascade = [CascadeType.ALL], orphanRemoval = true)
+    var reviews: MutableList<LocationReview> = mutableListOf()
 )
 
 

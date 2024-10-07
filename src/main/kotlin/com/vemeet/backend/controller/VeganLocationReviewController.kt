@@ -23,7 +23,7 @@ import org.springframework.web.bind.annotation.*
 @RestController
 @RequestMapping("/v1/vegan-locations-reviews/{locationId}")
 @Tag(name = "Location Reviews", description = "Endpoints for managing location reviews")
-class LocationReviewController(
+class VeganLocationReviewController(
     private val locationReviewService: LocationReviewService,
     private val userService: UserService,
 ) {
