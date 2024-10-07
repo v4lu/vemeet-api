@@ -7,8 +7,6 @@ import com.vemeet.backend.exception.ResourceNotFoundException
 import com.vemeet.backend.model.LocationImage
 import com.vemeet.backend.model.VeganLocation
 import com.vemeet.backend.repository.VeganLocationRepository
-import org.springframework.data.domain.Page
-import org.springframework.data.domain.Pageable
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.time.Instant
@@ -16,7 +14,7 @@ import java.time.Instant
 @Service
 class VeganLocationService(
     private val veganLocationRepository: VeganLocationRepository,
-    private val userService: UserService
+    private val userService: UserService,
 ) {
 
     @Transactional(readOnly = true)
@@ -26,11 +24,11 @@ class VeganLocationService(
     }
 
     @Transactional(readOnly = true)
-    fun getAllLocations(search: String?, pageable: Pageable): Page<VeganLocation> {
+    fun getAllLocations(search: String?): List<VeganLocation> {
         return if (!search.isNullOrBlank()) {
-            veganLocationRepository.findByNameContainingOrDescriptionContainingOrCityContainingAllIgnoreCase(search, search, search, pageable)
+            veganLocationRepository.findByNameContainingOrDescriptionContainingOrCityContainingAllIgnoreCase(search, search, search)
         } else {
-            veganLocationRepository.findAll(pageable)
+            veganLocationRepository.findAll()
         }
     }
 

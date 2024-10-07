@@ -12,7 +12,6 @@ import io.swagger.v3.oas.annotations.media.Schema
 import io.swagger.v3.oas.annotations.responses.ApiResponse
 import io.swagger.v3.oas.annotations.tags.Tag
 import jakarta.validation.Valid
-import org.springframework.data.domain.Page
 import org.springframework.data.domain.Pageable
 import org.springframework.http.ResponseEntity
 import org.springframework.security.core.Authentication
@@ -51,32 +50,13 @@ class VeganLocationController(
     @GetMapping
     @Operation(
         summary = "Get all vegan locations",
-        description = """
-        Retrieve a paginated list of vegan locations. Supports searching and sorting.
-        
-        Example usage:
-        - Basic: /v1/vegan-locations
-        - With search: /v1/vegan-locations?search=cafe
-        - With pagination: /v1/vegan-locations?page=0&size=10
-        - With sorting: /v1/vegan-locations?sort=name,asc
-        - Combined: /v1/vegan-locations?search=cafe&page=0&size=10&sort=name,asc&sort=city,desc
-    """,
-        responses = [
-            ApiResponse(
-                responseCode = "200", description = "Successfully retrieved locations",
-                content = [Content(schema = Schema(implementation = Page::class))]
-            ),
-            ApiResponse(
-                responseCode = "422", description = "Location missing some fields or they are not valid, it shows errors too",
-                content = [Content(schema = Schema(implementation = ExceptionResponse::class))]
-            )
-        ]
+        description = "Retrieve a paginated list of vegan locations. Supports searching and sorting."
     )
     fun getAllLocations(
         @RequestParam search: String?,
         pageable: Pageable
-    ): ResponseEntity<Page<VeganLocationResponse>> {
-        val locations = veganLocationService.getAllLocations(search, pageable)
+    ): ResponseEntity<List<VeganLocationResponse>> {
+        val locations = veganLocationService.getAllLocations(search)
         return ResponseEntity.ok(locations.map { VeganLocationResponse.fromVeganLocation(it) })
     }
 

@@ -11,10 +11,10 @@ interface VeganLocationRepository : JpaRepository<VeganLocation, Long> {
     fun findByCity(city: String): List<VeganLocation>
     fun findByType(type: String): List<VeganLocation>
     fun findByUserId(userId: Long): List<VeganLocation>
-        fun findByNameContainingOrDescriptionContainingOrCityContainingAllIgnoreCase(
+
+    fun findByNameContainingOrDescriptionContainingOrCityContainingAllIgnoreCase(
             name: String,
             description: String,
             city: String,
-            pageable: Pageable
-        ): Page<VeganLocation>
+            ): List<VeganLocation>
 }
