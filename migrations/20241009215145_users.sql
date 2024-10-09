@@ -1,4 +1,7 @@
-CREATE TABLE users (
+-- +goose Up
+-- +goose StatementBegin
+SELECT 'up SQL query';
+CREATE TABLE IF NOT EXISTS users (
     id bigserial PRIMARY KEY,
     username text NOT NULL UNIQUE,
     birthday timestamp NOT NULL,
@@ -22,14 +25,15 @@ CREATE TABLE users (
     profile_image_id bigint
 );
 
-CREATE TABLE images (
+CREATE TABLE IF NOT EXISTS images (
     id bigserial PRIMARY KEY,
     user_id bigint NOT NULL REFERENCES users(id),
     url text NOT NULL,
     created_at timestamp with time zone DEFAULT now()
 );
 
-CREATE TABLE followers (
+
+CREATE TABLE IF NOT EXISTS followers (
     id bigserial PRIMARY KEY,
     follower_id bigint NOT NULL REFERENCES users(id),
     followed_id bigint NOT NULL REFERENCES users(id),
@@ -37,7 +41,7 @@ CREATE TABLE followers (
     CONSTRAINT unique_follower_pair UNIQUE (follower_id, followed_id)
 );
 
-CREATE TABLE follow_requests (
+CREATE TABLE IF NOT EXISTS follow_requests (
     id bigserial PRIMARY KEY,
     requester_id bigint NOT NULL REFERENCES users(id),
     target_id bigint NOT NULL REFERENCES users(id),
@@ -59,3 +63,25 @@ CREATE INDEX IF NOT EXISTS idx_followers_followed_id ON followers (followed_id);
 CREATE INDEX IF NOT EXISTS idx_followers_follower_followed ON followers (follower_id, followed_id);
 CREATE INDEX IF NOT EXISTS idx_follow_requests_requester_id ON follow_requests (requester_id);
 CREATE INDEX IF NOT EXISTS idx_follow_requests_target_id ON follow_requests (target_id);
+-- +goose StatementEnd
+
+-- +goose Down
+-- +goose StatementBegin
+SELECT 'down SQL query';
+DROP TABLE IF EXISTS users CASCADE;
+DROP TABLE IF EXISTS images CASCADE;
+DROP TABLE IF EXISTS followers CASCADE;
+DROP TABLE IF EXISTS follow_requests CASCADE;
+
+DROP INDEX IF EXISTS idx_users_aws_cognito_id;
+DROP INDEX IF EXISTS idx_users_username;
+DROP INDEX IF EXISTS idx_images_user_id;
+DROP INDEX IF EXISTS idx_followers_follower_id;
+DROP INDEX IF EXISTS idx_followers_followed_id;
+DROP INDEX IF EXISTS idx_followers_follower_followed;
+DROP INDEX IF EXISTS idx_follow_requests_requester_id;
+DROP INDEX IF EXISTS idx_follow_requests_target_id;
+DROP INDEX IF EXISTS idx_follow_requests_requester_target;
+DROP INDEX IF EXISTS idx_follow_requests_target_requester;
+DROP INDEX IF EXISTS idx_follow_requests_requester_id_target_id;
+-- +goose StatementEnd

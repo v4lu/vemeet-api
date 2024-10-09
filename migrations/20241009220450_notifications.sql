@@ -1,3 +1,6 @@
+-- +goose Up
+-- +goose StatementBegin
+SELECT 'up SQL query';
 CREATE TABLE notification_types (
     id serial PRIMARY KEY,
     name varchar(50) UNIQUE NOT NULL
@@ -21,3 +24,13 @@ CREATE TABLE notifications (
 
 CREATE INDEX idx_notifications_user_id ON notifications (user_id);
 CREATE INDEX idx_notifications_created_at ON notifications (created_at);
+-- +goose StatementEnd
+
+-- +goose Down
+-- +goose StatementBegin
+SELECT 'down SQL query';
+DROP TABLE IF EXISTS notifications;
+DROP TABLE IF EXISTS notification_types;
+DROP INDEX IF EXISTS idx_notifications_user_id;
+DROP INDEX IF EXISTS idx_notifications_created_at;
+-- +goose StatementEnd

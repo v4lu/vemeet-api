@@ -1,3 +1,6 @@
+-- +goose Up
+-- +goose StatementBegin
+SELECT 'up SQL query';
 CREATE TABLE IF NOT EXISTS content_types (
     id serial PRIMARY KEY,
     name varchar(50) UNIQUE NOT NULL
@@ -12,6 +15,15 @@ CREATE TABLE IF NOT EXISTS posts (
     created_at timestamp with time zone DEFAULT now(),
     updated_at timestamp with time zone DEFAULT now()
 );
+
+CREATE TABLE IF NOT EXISTS post_images (
+    id bigserial PRIMARY KEY,
+    post_id bigint NOT NULL REFERENCES posts(id),
+    image_id bigint NOT NULL REFERENCES images(id),
+    order_index int NOT NULL,
+    created_at timestamp with time zone DEFAULT now()
+);
+
 
 CREATE TABLE recipe_categories (
     id bigserial PRIMARY KEY,
@@ -62,14 +74,6 @@ CREATE TABLE recipe_tags (
     PRIMARY KEY (recipe_id, tag_id)
 );
 
-CREATE TABLE IF NOT EXISTS post_images (
-    id bigserial PRIMARY KEY,
-    post_id bigint NOT NULL REFERENCES posts(id),
-    image_id bigint NOT NULL REFERENCES images(id),
-    order_index int NOT NULL,
-    created_at timestamp with time zone DEFAULT now()
-);
-
 CREATE TABLE IF NOT EXISTS reactions (
     id bigserial PRIMARY KEY,
     user_id bigint NOT NULL REFERENCES users(id),
@@ -80,10 +84,13 @@ CREATE TABLE IF NOT EXISTS reactions (
     CONSTRAINT unique_user_content_reaction UNIQUE (user_id, content_type_id, content_id)
 );
 
-CREATE INDEX idx_posts_user_id ON posts (user_id);
-CREATE INDEX idx_post_images_post_id ON post_images (post_id);
-CREATE INDEX idx_post_images_image_id ON post_images (image_id);
-CREATE INDEX idx_reactions_user_id ON reactions (user_id);
+CREATE TABLE IF NOT EXISTS post_images (
+    id bigserial PRIMARY KEY,
+    post_id bigint NOT NULL REFERENCES posts(id),
+    image_id bigint NOT NULL REFERENCES images(id),
+    order_index int NOT NULL,
+    created_at timestamp with time zone DEFAULT now()
+);
 
 CREATE TABLE comments (
     id bigserial PRIMARY KEY,
@@ -109,6 +116,15 @@ CREATE TABLE comment_reactions (
     created_at timestamp with time zone DEFAULT now(),
     CONSTRAINT unique_user_comment_reaction UNIQUE (user_id, comment_id)
 );
+
+
+
+
+CREATE INDEX idx_posts_user_id ON posts (user_id);
+CREATE INDEX idx_post_images_post_id ON post_images (post_id);
+CREATE INDEX idx_post_images_image_id ON post_images (image_id);
+CREATE INDEX idx_reactions_user_id ON reactions (user_id);
+
 
 CREATE INDEX idx_comment_reactions_user_id ON comment_reactions (user_id);
 CREATE INDEX idx_comment_reactions_comment_id ON comment_reactions (comment_id);
@@ -140,3 +156,38 @@ CREATE TRIGGER delete_recipe_reactions
     BEFORE DELETE ON recipes
     FOR EACH ROW
 EXECUTE FUNCTION delete_related_reactions();
+
+
+
+-- +goose StatementEnd
+
+-- +goose Down
+-- +goose StatementBegin
+SELECT 'down SQL query';
+DROP TABLE IF EXISTS comment_reactions;
+DROP TABLE IF EXISTS comments;
+DROP TABLE IF EXISTS post_images;
+DROP TABLE IF EXISTS reactions;
+DROP TABLE IF EXISTS recipe_tags;
+DROP TABLE IF EXISTS tags;
+DROP TABLE IF EXISTS recipe_images;
+DROP TABLE IF EXISTS ingredients;
+DROP TABLE IF EXISTS recipes;
+DROP TABLE IF EXISTS recipe_categories;
+DROP TABLE IF EXISTS post_images;
+DROP TABLE IF EXISTS posts;
+DROP TABLE IF EXISTS content_types;
+DROP INDEX IF EXISTS idx_posts_user_id;
+DROP INDEX IF EXISTS idx_post_images_post_id;
+DROP INDEX IF EXISTS idx_post_images_image_id;
+DROP INDEX IF EXISTS idx_reactions_user_id;
+DROP INDEX IF EXISTS idx_comment_reactions_user_id;
+DROP INDEX IF EXISTS idx_comment_reactions_comment_id;
+DROP INDEX IF EXISTS idx_comments_user_id;
+DROP INDEX IF EXISTS idx_comments_parent_id;
+DROP INDEX IF EXISTS idx_comments_post_id;
+DROP INDEX IF EXISTS idx_comments_recipe_id;
+DROP FUNCTION IF EXISTS delete_related_reactions();
+DROP TRIGGER IF EXISTS delete_post_reactions ON posts;
+DROP TRIGGER IF EXISTS delete_recipe_reactions ON recipes;
+-- +goose StatementEnd

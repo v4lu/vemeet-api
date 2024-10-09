@@ -15,11 +15,13 @@ CREATE TABLE IF NOT EXISTS cities (
     name TEXT NOT NULL,
     lat DOUBLE PRECISION,
     lng DOUBLE PRECISION,
-    coutry_id INTEGER REFERENCES countries(id)
+    country_iso_code TEXT NOT NULL,
+    country_id INTEGER REFERENCES countries(id)
 );
 
 CREATE INDEX idx_country_iso_code ON countries(iso_code);
 CREATE INDEX idx_city_country_id ON cities(id);
+CREATE INDEX idx_city_country_iso_code ON cities(country_iso_code);
 -- +goose StatementEnd
 
 -- +goose Down
@@ -30,4 +32,5 @@ DROP TABLE IF EXISTS cities CASCADE;
 
 DROP INDEX IF EXISTS idx_country_iso_code;
 DROP INDEX IF EXISTS idx_city_country_id;
+DROP INDEX IF EXISTS idx_city_country_iso_code;
 -- +goose StatementEnd

@@ -1,3 +1,6 @@
+-- +goose Up
+-- +goose StatementBegin
+SELECT 'up SQL query';
 
 CREATE TABLE IF NOT EXISTS user_preferences (
     id bigserial PRIMARY KEY,
@@ -84,3 +87,27 @@ CREATE TABLE swiper_user_profile_images (
     image_url VARCHAR(255),
     CONSTRAINT fk_profile FOREIGN KEY (profile_id) REFERENCES swiper_user_profiles(id)
 );
+-- +goose StatementEnd
+
+-- +goose Down
+-- +goose StatementBegin
+SELECT 'down SQL query';
+DROP TABLE IF EXISTS swiper_user_profile_images;
+DROP TABLE IF EXISTS swiper_user_profiles;
+DROP TABLE IF EXISTS potential_matches;
+DROP TABLE IF EXISTS matches;
+DROP TABLE IF EXISTS swipes;
+DROP TABLE IF EXISTS user_preferences;
+DROP FUNCTION IF EXISTS calculate_distance;
+DROP VIEW IF EXISTS potential_matches;
+DROP INDEX IF EXISTS idx_user_preferences_user_id;
+DROP INDEX IF EXISTS idx_swipes_swiper_id;
+DROP INDEX IF EXISTS idx_swipes_swiped_id;
+DROP INDEX IF EXISTS idx_matches_user1_id;
+DROP INDEX IF EXISTS idx_matches_user2_id;
+DROP INDEX IF EXISTS idx_user_preferences_user_id;
+DROP INDEX IF EXISTS idx_swipes_swiper_id;
+DROP INDEX IF EXISTS idx_swipes_swiped_id;
+DROP INDEX IF EXISTS idx_matches_user1_id;
+DROP INDEX IF EXISTS idx_matches_user2_id;
+-- +goose StatementEnd

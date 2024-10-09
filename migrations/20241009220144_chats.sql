@@ -1,3 +1,6 @@
+-- +goose Up
+-- +goose StatementBegin
+SELECT 'up SQL query';
 CREATE TABLE IF NOT EXISTS chats (
     id bigserial PRIMARY KEY,
     user1_id bigint NOT NULL REFERENCES users(id),
@@ -65,3 +68,24 @@ CREATE TRIGGER trigger_update_chat_last_message
     AFTER INSERT ON messages
     FOR EACH ROW
 EXECUTE FUNCTION update_chat_last_message();
+-- +goose StatementEnd
+
+-- +goose Down
+-- +goose StatementBegin
+SELECT 'down SQL query';
+DROP TRIGGER IF EXISTS trigger_update_chat_last_message ON messages;
+DROP FUNCTION IF EXISTS update_chat_last_message;
+DROP TABLE IF EXISTS chat_assets;
+DROP TABLE IF EXISTS messages;
+DROP TABLE IF EXISTS chats;
+DROP INDEX IF EXISTS idx_chats_last_message_id;
+DROP INDEX IF EXISTS idx_chat_assets_message_id;
+DROP INDEX IF EXISTS idx_messages_created_at;
+DROP INDEX IF EXISTS idx_messages_sender_id;
+DROP INDEX IF EXISTS idx_messages_chat_id;
+DROP INDEX IF EXISTS idx_chats_user2_id;
+DROP INDEX IF EXISTS idx_chats_user1_id;
+DROP INDEX IF EXISTS idx_chats_last_message_id;
+DROP INDEX IF EXISTS idx_chats_user2_id;
+DROP INDEX IF EXISTS idx_chats_user1_id;
+-- +goose StatementEnd
