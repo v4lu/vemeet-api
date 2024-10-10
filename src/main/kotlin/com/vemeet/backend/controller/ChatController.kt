@@ -149,7 +149,7 @@ class ChatController(
     }
 
 
-    @GetMapping("/{receiverId}")
+    @GetMapping("/users/{receiverId}")
     @Operation(
         summary = "Get all chats for the current user",
         responses = [

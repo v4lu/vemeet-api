@@ -54,7 +54,7 @@ class UploadController(
         @RequestParam("file") @NotNull(value = "it can be empty") file: MultipartFile
     ): ResponseEntity<UploadResponse> {
         val conversionResponse = webClient.post()
-            .uri("http://image-converter:9001/convert")
+            .uri("http://image:9001/convert")
             .contentType(MediaType.MULTIPART_FORM_DATA)
             .body(BodyInserters.fromMultipartData("image", file.resource))
             .retrieve()

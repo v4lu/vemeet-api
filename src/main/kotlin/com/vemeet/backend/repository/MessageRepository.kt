@@ -17,6 +17,7 @@ import org.springframework.stereotype.Repository
 interface ChatRepository : JpaRepository<Chat, Long> {
     fun findByUser1IdOrUser2Id(user1Id: Long, user2Id: Long): List<Chat>
 
+
     @Query("SELECT c FROM Chat c WHERE (c.user1 = :user1 AND c.user2 = :user2) OR (c.user1 = :user2 AND c.user2 = :user1)")
     fun findChatBetweenUsers(@Param("user1") user1: User, @Param("user2") user2: User): Chat?
 
@@ -32,6 +33,8 @@ interface ChatRepository : JpaRepository<Chat, Long> {
     """)
     fun findChatsWithLastMessageByUserId(@Param("userId") userId: Long): List<ChatWithLastMessage>
 
+
+    
 }
 
 @Repository

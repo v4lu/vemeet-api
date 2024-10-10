@@ -56,7 +56,7 @@ class ChatService(
         // Call external encryption service
         val encryptionResponse = try {
             webClient.post()
-                .uri("http://localhost:9002/v1/crypto/encrypt")
+                .uri("http://encrpytion:9002/v1/crypto/encrypt")
                 .bodyValue(mapOf("message" to request.content))
                 .retrieve()
                 .awaitBody<EncryptionResponse>()
@@ -136,7 +136,7 @@ class ChatService(
         val decryptedContent = if (message.encryptedContent != null) {
             try {
                 val decryptionResponse = webClient.post()
-                    .uri("http://localhost:9002/v1/crypto/decrypt")
+                    .uri("http://encrpytion:9002/v1/crypto/decrypt")
                     .bodyValue(mapOf(
                         "encrypted_message" to Base64.getEncoder().encodeToString(message.encryptedContent),
                         "encrypted_data_key" to Base64.getEncoder().encodeToString(message.encryptedDataKey)
