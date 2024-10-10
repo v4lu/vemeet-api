@@ -4,6 +4,6 @@ run:
 	gradle bootRun --args='--spring.profiles.active=$(SPRING_PROFILE)'
 
 docker-build:
-	gradle gradle clean build jibDockerBuild
+	gradle  clean build jibDockerBuild
 
 .PHONY: run, docker-build

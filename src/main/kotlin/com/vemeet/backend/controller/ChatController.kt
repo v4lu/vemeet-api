@@ -147,5 +147,33 @@ class ChatController(
         val message = chatService.sendMessage(user, chatId, request)
         return ResponseEntity.ok(message)
     }
+
+
+    @GetMapping("/{receiverId}")
+    @Operation(
+        summary = "Get all chats for the current user",
+        responses = [
+            ApiResponse(
+                responseCode = "200",
+                description = "Retrieved chats successfully",
+                content = [Content(schema = Schema(implementation = ChatResponse::class))]
+            ),
+            ApiResponse(
+                responseCode = "401",
+                description = "Unauthorized",
+                content = [Content(schema = Schema(implementation = ExceptionResponse::class))]
+            )
+        ]
+    )
+     fun getChatByUsers(
+        authentication: Authentication,
+        @PathVariable receiverId: Long
+     ): ResponseEntity<ChatResponse> {
+        val cognitoId = CognitoIdExtractor.extractCognitoId(authentication)  ?: throw NotAllowedException("Not valid token")
+        val user = userService.getSessionUser(cognitoId)
+        val chats = chatService.getChatByUsers(user, receiverId)
+        return ResponseEntity.ok(chats)
+    }
+
 }
 

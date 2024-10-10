@@ -33,6 +33,7 @@ class ChatService(
     private val chatRepository: ChatRepository,
     private val webClient: WebClient,
     private val objectMapper: ObjectMapper,
+    private val userService: UserService,
     private val chatWebSocketService: ChatWebSocketService,
     private val notificationService: NotificationService,
 ) {
@@ -153,6 +154,14 @@ class ChatService(
         return MessageResponse.from(message, decryptedContent, sessionUser)
     }
 
+    fun getChatByUsers(sessionUser: User, receiverId: Long) : ChatResponse {
+        val receiver = userService.getUserByIdFull(receiverId)
+        val chat = chatRepository.findChatBetweenUsers(sessionUser, receiver)
+            ?: throw ResourceNotFoundException("Chat not found")
+
+        return ChatResponse.from(chat, sessionUser, null)
+
+    }
 
     @Transactional
     suspend fun createChat(userId: Long, otherUserId: Long): ChatResponse {
@@ -190,7 +199,7 @@ class ChatService(
         return true // Placeholder
     }
 
-     private  fun updateSeenStatus(chat: Chat, user: User) {
+    private  fun updateSeenStatus(chat: Chat, user: User) {
         if (user.id == chat.user1.id && !chat.user1SeenStatus) {
             chat.user1SeenStatus = true
             chatRepository.save(chat)
