@@ -12,12 +12,16 @@ data class City(
     @Column(name = "country_iso_code")
     val countryIsoCode: String = "",
 
-    @Column(name = "city_name")
+    @Column(name = "name")
     val cityName: String = "",
 
-    @Column(name = "city_lat")
+    @Column(name = "lat")
     val cityLat: Double = 0.0,
 
-    @Column(name = "city_lng")
+    @Column(name = "lng")
     val cityLng: Double = 0.0,
+
+    @OneToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "country_id", referencedColumnName = "id")
+    var country: Country = Country(),
 )

@@ -7,20 +7,20 @@ import jakarta.persistence.*
 data class Country(
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    val id: Long = 0,
+    val id: Int = 0,
 
-    @Column(name = "country_name")
+    @Column(name = "name")
     val countryName: String = "",
 
-    @Column(name = "country_flag")
+    @Column(name = "flag")
     val countryFlag: String = "",
 
-    @Column(name = "country_iso_code")
+    @Column(name = "iso_code")
     val countryIsoCode: String = "",
 
-    @Column(name = "country_lat")
+    @Column(name = "lat")
     val countryLat: Double = 0.0,
 
-    @Column(name = "country_lng")
+    @Column(name = "lng")
     val countryLng: Double = 0.0,
 )

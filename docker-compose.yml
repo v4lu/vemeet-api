@@ -2,7 +2,7 @@ services:
   cache:
     image: redis:alpine
     ports:
-      - "6379:6379"
+      - '6379:6379'
     volumes:
       - redis_vemeet_data:/data
     networks:
@@ -11,7 +11,7 @@ services:
   postgres:
     image: postgres:alpine
     ports:
-      - "5432:5432"
+      - '5432:5432'
     environment:
       - POSTGRES_USER=postgres
       - POSTGRES_PASSWORD=postgres
@@ -23,8 +23,6 @@ services:
 
 networks:
   core_ve:
-    external: true
-    name: core_ve
 
 volumes:
   redis_vemeet_data:

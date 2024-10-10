@@ -68,8 +68,6 @@ aws:
   cognitoSecret: ${AWS_COGNITO_SECRET}
   cognitoDomain: ${AWS_COGNITO_DOMAIN}
   s3BucketName: ${AWS_S3_BUCKET}
-  kms:
-    keyId: ${AWS_KMS_KEY_ID}
 
 # Swagger
 springdoc:
