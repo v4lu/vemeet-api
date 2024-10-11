@@ -85,38 +85,7 @@ class ChatController(
         return ResponseEntity.ok(messages)
     }
 
-    @PostMapping("/create")
-    @Operation(
-        summary = "Create a new chat between two users",
-        responses = [
-            ApiResponse(
-                responseCode = "200",
-                description = "Chat created successfully",
-                content = [Content(schema = Schema(implementation = ChatResponse::class))]
-            ),
-            ApiResponse(
-                responseCode = "404",
-                description = "User not found",
-                content = [Content(schema = Schema(implementation = ExceptionResponse::class))]
-            ),
-            ApiResponse(
-                responseCode = "400",
-                description = "Invalid request",
-                content = [Content(schema = Schema(implementation = ExceptionResponse::class))]
-            )
-        ]
-    )
-    suspend fun createChat(
-        authentication: Authentication,
-        @RequestBody request: CreateChatRequest
-    ): ResponseEntity<ChatResponse> {
-        val cognitoId = CognitoIdExtractor.extractCognitoId(authentication)  ?: throw NotAllowedException("Not valid token")
-        val user = userService.getSessionUser(cognitoId)
-        val chat = chatService.createChat(user.id, request.otherUserId)
-        return ResponseEntity.ok(chat)
-    }
-
-    @PostMapping("/{chatId}/messages")
+    @PostMapping("/messages")
     @Operation(
         summary = "Send a new message in a specific chat",
         responses = [
@@ -139,12 +108,11 @@ class ChatController(
     )
     suspend fun sendMessage(
         authentication: Authentication,
-        @PathVariable chatId: Long,
         @RequestBody request: SendMessageRequest
     ): ResponseEntity<MessageResponse> {
         val cognitoId = CognitoIdExtractor.extractCognitoId(authentication)  ?: throw NotAllowedException("Not valid token")
         val user = userService.getSessionUser(cognitoId)
-        val message = chatService.sendMessage(user, chatId, request)
+        val message = chatService.sendMessage(user, request)
         return ResponseEntity.ok(message)
     }
 

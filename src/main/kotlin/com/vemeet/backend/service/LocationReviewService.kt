@@ -62,21 +62,17 @@ class LocationReviewService(
         }
 
         review.apply {
-            request.rating.let {
-                if (it != null) {
-                    rating = it
-                }
-            }
+            request.rating?.let { rating = it }
             request.comment?.let { comment = it }
             updatedAt = Instant.now()
         }
 
-        request.imagesToAdd?.forEach { imageUrl ->
-            review.images.add(ReviewImage(review = review, imageUrl = imageUrl))
-        }
-
         request.imageIdsToRemove?.let { idsToRemove ->
             review.images.removeIf { it.id in idsToRemove }
+        }
+
+        request.imagesToAdd?.forEach { imageUrl ->
+            review.images.add(ReviewImage(review = review, imageUrl = imageUrl))
         }
 
         val updatedReview = locationReviewRepository.save(review)

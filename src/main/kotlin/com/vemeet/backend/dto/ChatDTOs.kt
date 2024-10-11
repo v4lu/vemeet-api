@@ -75,7 +75,8 @@ data class SendMessageRequest(
     val recipientId: Long,
     val messageType: String,
     val content: String,
-    val isOneTime: Boolean = false
+    val isOneTime: Boolean = false,
+    val firstTime: Boolean,
 )
 
 data class CreateChatRequest(
