@@ -45,4 +45,5 @@ interface ChatAssetRepository : JpaRepository<ChatAsset, Long> {
 
     fun findByChatIdAndFileTypeIn(chatId: Long, fileType: List<String>, pageable: Pageable): Page<ChatAsset>
     fun findByMessageId(messageId: Long): ChatAsset?
+    fun findAllByMessageId(messageId: Long) : List<ChatAsset>
 }

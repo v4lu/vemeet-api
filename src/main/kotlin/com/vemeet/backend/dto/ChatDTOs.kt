@@ -44,7 +44,7 @@ data class SendMessageRequest(
     val content: String,
     val isOneTime: Boolean = false,
     val firstTime: Boolean,
-    val chatAsset: ChatAssetRequest?
+    val chatAssets: List<ChatAssetRequest>?
 )
 
 
@@ -60,10 +60,10 @@ data class MessageResponse(
     val isOneTime: Boolean,
     val recipient: User,
     val isSessionUserSender: Boolean,
-    val chatAsset: ChatAssetResponse?
+    val chatAssets: List<ChatAssetResponse>?
 ) {
     companion object {
-        fun from(message: Message, decryptedContent: String?, sessionUser: User, chatAsset: ChatAsset?, decryptedFileUrl: String?): MessageResponse {
+        fun from(message: Message, decryptedContent: String?, sessionUser: User, chatAssets: List<ChatAsset>?, decryptedFileUrls: List<String?>?): MessageResponse {
             val recipient = if (message.sender.id == message.chat.user1.id) message.chat.user2 else message.chat.user1
             val isSessionUserSender = message.sender.id == sessionUser.id
 
@@ -79,7 +79,9 @@ data class MessageResponse(
                 isOneTime = message.isOneTime,
                 recipient = recipient,
                 isSessionUserSender = isSessionUserSender,
-                chatAsset = chatAsset?.let { ChatAssetResponse.from(it, decryptedFileUrl) }
+                chatAssets = chatAssets?.mapIndexed { index, asset ->
+                    ChatAssetResponse.from(asset, decryptedFileUrls?.getOrNull(index))
+                }
             )
         }
     }

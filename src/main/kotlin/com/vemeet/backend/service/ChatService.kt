@@ -43,24 +43,23 @@ class ChatService(
             getExistingChat(sender, request.recipientId)
         }
 
-        val encryptionResponse =  cryptoService.encrypt(request.content)
+        val encryptionResponse = cryptoService.encrypt(request.content)
         val message = createMessage(chat, sender, request, encryptionResponse)
-        val savedMessage =  withContext(Dispatchers.IO) {
+        val savedMessage = withContext(Dispatchers.IO) {
             messageRepository.save(message)
         }
 
-        val chatAsset = request.chatAsset?.let { assetRequest ->
+        val chatAssets = request.chatAssets?.map { assetRequest ->
             createAndSaveChatAsset(savedMessage, chat, assetRequest)
         }
 
         updateChatStatus(chat, sender, savedMessage)
         notifyRecipient(recipient, sender)
 
-        val res = decryptedMessage(savedMessage, sender, chatAsset)
+        val res = decryptedMessage(savedMessage, sender, chatAssets)
         chatWebSocketService.sendMessage(recipient.id, res)
         return res
     }
-
 
     suspend fun getUserChats(user: User): List<ChatResponse> {
         val chatsWithLastMessages = withContext(Dispatchers.IO) {
@@ -68,11 +67,11 @@ class ChatService(
         }
         return chatsWithLastMessages.map { chatWithLastMessage ->
             val lastMessage = chatWithLastMessage.lastMessage
-            val chatAsset = lastMessage?.let { chatAssetRepository.findByMessageId(it.id) }
+            val chatAssets = lastMessage?.let { chatAssetRepository.findAllByMessageId(it.id) }
             ChatResponse.from(
                 chat = chatWithLastMessage.chat,
                 sessionUser = user,
-                lastMessage = lastMessage?.let { decryptedMessage(it, user, chatAsset) }
+                lastMessage = lastMessage?.let { decryptedMessage(it, user, chatAssets) }
             )
         }
     }
@@ -92,8 +91,8 @@ class ChatService(
         }
 
         val decryptedMessages = messagesPage.content.map { message ->
-            val chatAsset = chatAssetRepository.findByMessageId(message.id)
-            decryptedMessage(message, user, chatAsset)
+            val chatAssets = chatAssetRepository.findAllByMessageId(message.id)
+            decryptedMessage(message, user, chatAssets)
         }
 
         return PageImpl(decryptedMessages, pageable, messagesPage.totalElements)
@@ -109,12 +108,10 @@ class ChatService(
     }
 
 
-    private suspend fun decryptedMessage(message: Message, sessionUser: User, chatAsset: ChatAsset?): MessageResponse {
+    private suspend fun decryptedMessage(message: Message, sessionUser: User, chatAssets: List<ChatAsset>?): MessageResponse {
         val decryptedContent = if (message.encryptedContent != null) {
             try {
-                val decryptionResponse =
-                    message.encryptedDataKey?.let { cryptoService.decrypt(message.encryptedContent, it) }
-                decryptionResponse
+                message.encryptedDataKey?.let { cryptoService.decrypt(message.encryptedContent, it) }
             } catch (e: Exception) {
                 throw RuntimeException("Failed to decrypt message: ${e.message}")
             }
@@ -122,10 +119,11 @@ class ChatService(
             null
         }
 
-        val decryptedFileUrl = chatAsset?.let { decryptFileUrl(it) }
+        val decryptedFileUrls = chatAssets?.map { decryptFileUrl(it) }
 
-        return MessageResponse.from(message, decryptedContent, sessionUser, chatAsset, decryptedFileUrl)
+        return MessageResponse.from(message, decryptedContent, sessionUser, chatAssets, decryptedFileUrls)
     }
+
 
     suspend fun getChatAssets(chatId: Long, user: User, assetTypes: List<String>, page: Int, size: Int): Page<ChatAssetResponse> {
         val chat = withContext(Dispatchers.IO) {
