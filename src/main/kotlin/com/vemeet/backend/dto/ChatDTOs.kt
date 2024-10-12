@@ -63,7 +63,7 @@ data class MessageResponse(
     val chatAsset: ChatAssetResponse?
 ) {
     companion object {
-        fun from(message: Message, decryptedContent: String?, sessionUser: User, chatAsset: ChatAsset?): MessageResponse {
+        fun from(message: Message, decryptedContent: String?, sessionUser: User, chatAsset: ChatAsset?, decryptedFileUrl: String?): MessageResponse {
             val recipient = if (message.sender.id == message.chat.user1.id) message.chat.user2 else message.chat.user1
             val isSessionUserSender = message.sender.id == sessionUser.id
 
@@ -79,7 +79,7 @@ data class MessageResponse(
                 isOneTime = message.isOneTime,
                 recipient = recipient,
                 isSessionUserSender = isSessionUserSender,
-                chatAsset = chatAsset?.let { ChatAssetResponse.from(it) }
+                chatAsset = chatAsset?.let { ChatAssetResponse.from(it, decryptedFileUrl) }
             )
         }
     }
@@ -93,10 +93,11 @@ data class ChatAssetResponse(
     val fileSize: Long,
     val mimeType: String?,
     val durationSeconds: Int?,
+    val fileUrl: String?,
     val createdAt: String
 ) {
     companion object {
-        fun from(chatAsset: ChatAsset): ChatAssetResponse {
+        fun from(chatAsset: ChatAsset, decryptedFileUrl: String?): ChatAssetResponse {
             return ChatAssetResponse(
                 id = chatAsset.id,
                 messageId = chatAsset.message.id,
@@ -105,6 +106,7 @@ data class ChatAssetResponse(
                 fileSize = chatAsset.fileSize,
                 mimeType = chatAsset.mimeType,
                 durationSeconds = chatAsset.durationSeconds,
+                fileUrl = decryptedFileUrl,
                 createdAt = DateTimeFormatter.ISO_INSTANT.format(chatAsset.createdAt)
             )
         }

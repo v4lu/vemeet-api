@@ -129,8 +129,11 @@ class ChatService(
             null
         }
 
-        return MessageResponse.from(message, decryptedContent, sessionUser, chatAsset)
+        val decryptedFileUrl = chatAsset?.let { decryptFileUrl(it) }
+
+        return MessageResponse.from(message, decryptedContent, sessionUser, chatAsset, decryptedFileUrl)
     }
+
 
 
     suspend fun getChatAssets(chatId: Long, user: User, assetTypes: List<String>, page: Int, size: Int): Page<ChatAssetResponse> {
@@ -146,11 +149,13 @@ class ChatService(
             chatAssetRepository.findByChatIdAndFileTypeIn(chatId, assetTypes, pageable)
         }
 
-        val assetResponses = assetsPage.content.map { ChatAssetResponse.from(it) }
+        val assetResponses = assetsPage.content.map { chatAsset ->
+            val decryptedFileUrl = decryptFileUrl(chatAsset)
+            ChatAssetResponse.from(chatAsset, decryptedFileUrl)
+        }
 
         return PageImpl(assetResponses, pageable, assetsPage.totalElements)
     }
-
 
     private fun isFollowing(followerId: Long, followedId: Long): Boolean {
         return true // Placeholder
@@ -238,7 +243,8 @@ class ChatService(
         )
     }
 
-      private fun createAndSaveChatAsset(message: Message, chat: Chat, assetRequest: ChatAssetRequest): ChatAsset {
+    private suspend fun createAndSaveChatAsset(message: Message, chat: Chat, assetRequest: ChatAssetRequest): ChatAsset {
+        val filePathEncryptionResponse = encryptMessage(assetRequest.assetUrl)
         val chatAsset = ChatAsset(
             message = message,
             chat = chat,
@@ -246,9 +252,13 @@ class ChatService(
             fileSize = assetRequest.fileSize,
             mimeType = assetRequest.mimeType,
             durationSeconds = assetRequest.durationSeconds,
-            encryptedFilePath = assetRequest.assetUrl
+            encryptedFilePath = Base64.getDecoder().decode(filePathEncryptionResponse.encryptedMessage),
+            filePathEncryptedDataKey = Base64.getDecoder().decode(filePathEncryptionResponse.encryptedDataKey),
+            filePathEncryptionVersion = filePathEncryptionResponse.keyVersion
         )
-        return chatAssetRepository.save(chatAsset)
+        return withContext(Dispatchers.IO) {
+            chatAssetRepository.save(chatAsset)
+        }
     }
 
     private suspend fun updateChatStatus(chat: Chat, sender: User, lastMessage: Message) {
@@ -263,6 +273,26 @@ class ChatService(
         }
         withContext(Dispatchers.IO) {
             chatRepository.save(chat)
+        }
+    }
+
+    private suspend fun decryptFileUrl(chatAsset: ChatAsset): String? {
+        return if (chatAsset.encryptedFilePath != null && chatAsset.filePathEncryptedDataKey != null) {
+            try {
+                val decryptionResponse = webClient.post()
+                    .uri("http://localhost:9002/v1/crypto/decrypt")
+                    .bodyValue(mapOf(
+                        "encrypted_message" to Base64.getEncoder().encodeToString(chatAsset.encryptedFilePath),
+                        "encrypted_data_key" to Base64.getEncoder().encodeToString(chatAsset.filePathEncryptedDataKey)
+                    ))
+                    .retrieve()
+                    .awaitBody<Map<String, String>>()
+                decryptionResponse["decrypted_message"]
+            } catch (e: Exception) {
+                throw RuntimeException("Failed to decrypt file URL: ${e.message}")
+            }
+        } else {
+            null
         }
     }
 

@@ -3,6 +3,7 @@ package com.vemeet.backend.exception
 import com.vemeet.backend.dto.ExceptionResponse
 import com.vemeet.backend.dto.FieldException
 import org.apache.coyote.BadRequestException
+import org.springframework.dao.InvalidDataAccessApiUsageException
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.security.authentication.BadCredentialsException
@@ -181,6 +182,15 @@ class GlobalExceptionHandler {
             statusCode = HttpStatus.CONFLICT.value(),
             message = ex.message ?: "Email already exists"
         )
+        return ResponseEntity(errorResponse, HttpStatus.CONFLICT)
+    }
+
+    @ExceptionHandler(InvalidDataAccessApiUsageException::class)
+    fun handleInvalidDataAccessApiUsageException(ex: InvalidDataAccessApiUsageException): ResponseEntity<ExceptionResponse> {
+       val errorResponse = ExceptionResponse(
+           statusCode = HttpStatus.CONFLICT.value(),
+           message = ex.message ?: "This action is not allowed"
+       )
         return ResponseEntity(errorResponse, HttpStatus.CONFLICT)
     }
 
