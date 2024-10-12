@@ -1,9 +1,7 @@
 package com.vemeet.backend.dto
 
 import com.fasterxml.jackson.annotation.JsonProperty
-import com.vemeet.backend.model.Chat
-import com.vemeet.backend.model.Message
-import com.vemeet.backend.model.User
+import com.vemeet.backend.model.*
 import java.time.format.DateTimeFormatter
 
 data class ChatResponse(
@@ -39,20 +37,33 @@ data class ChatResponse(
     }
 }
 
+
+data class SendMessageRequest(
+    val recipientId: Long,
+    val messageType: MessageType,
+    val content: String,
+    val isOneTime: Boolean = false,
+    val firstTime: Boolean,
+    val chatAsset: ChatAssetRequest?
+)
+
+
 data class MessageResponse(
     val id: Long,
     val chatId: Long,
     val sender: User,
-    val messageType: String,
+    val messageType: MessageType,
     val content: String?,
+    val contentPreview: String?,
     val createdAt: String,
     val readAt: String?,
     val isOneTime: Boolean,
     val recipient: User,
-    val isSessionUserSender: Boolean
+    val isSessionUserSender: Boolean,
+    val chatAsset: ChatAssetResponse?
 ) {
     companion object {
-        fun from(message: Message, decryptedContent: String?, sessionUser: User): MessageResponse {
+        fun from(message: Message, decryptedContent: String?, sessionUser: User, chatAsset: ChatAsset?): MessageResponse {
             val recipient = if (message.sender.id == message.chat.user1.id) message.chat.user2 else message.chat.user1
             val isSessionUserSender = message.sender.id == sessionUser.id
 
@@ -62,26 +73,45 @@ data class MessageResponse(
                 sender = message.sender,
                 messageType = message.messageType,
                 content = decryptedContent,
+                contentPreview = message.contentPreview,
                 createdAt = DateTimeFormatter.ISO_INSTANT.format(message.createdAt),
                 readAt = message.readAt?.let { DateTimeFormatter.ISO_INSTANT.format(it) },
                 isOneTime = message.isOneTime,
                 recipient = recipient,
-                isSessionUserSender = isSessionUserSender
+                isSessionUserSender = isSessionUserSender,
+                chatAsset = chatAsset?.let { ChatAssetResponse.from(it) }
             )
         }
     }
 }
-data class SendMessageRequest(
-    val recipientId: Long,
-    val messageType: String,
-    val content: String,
-    val isOneTime: Boolean = false,
-    val firstTime: Boolean,
-)
 
-data class CreateChatRequest(
-    val otherUserId: Long
-)
+data class ChatAssetResponse(
+    val id: Long,
+    val messageId: Long,
+    val chatId: Long,
+    val fileType: String,
+    val fileSize: Long,
+    val mimeType: String?,
+    val durationSeconds: Int?,
+    val createdAt: String
+) {
+    companion object {
+        fun from(chatAsset: ChatAsset): ChatAssetResponse {
+            return ChatAssetResponse(
+                id = chatAsset.id,
+                messageId = chatAsset.message.id,
+                chatId = chatAsset.chat.id,
+                fileType = chatAsset.fileType,
+                fileSize = chatAsset.fileSize,
+                mimeType = chatAsset.mimeType,
+                durationSeconds = chatAsset.durationSeconds,
+                createdAt = DateTimeFormatter.ISO_INSTANT.format(chatAsset.createdAt)
+            )
+        }
+    }
+}
+
+
 
 data class ChatWithLastMessage(
     val chat: Chat,
@@ -98,4 +128,12 @@ data class EncryptionResponse(
 
     @JsonProperty("key_version")
     val keyVersion: Int
+)
+
+data class ChatAssetRequest(
+    val fileType: String,
+    val fileSize: Long,
+    val mimeType: String?,
+    val durationSeconds: Int?,
+    val assetUrl: String
 )

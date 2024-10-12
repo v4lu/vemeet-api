@@ -73,7 +73,7 @@ class ChatController(
             )
         ]
     )
-    fun getChatMessages(
+    suspend fun getChatMessages(
         authentication: Authentication,
         @PathVariable chatId: Long,
         @RequestParam(defaultValue = "0") page: Int,
@@ -85,7 +85,7 @@ class ChatController(
         return ResponseEntity.ok(messages)
     }
 
-    @PostMapping("/messages")
+    @PostMapping("/message")
     @Operation(
         summary = "Send a new message in a specific chat",
         responses = [
@@ -141,6 +141,41 @@ class ChatController(
         val user = userService.getSessionUser(cognitoId)
         val chats = chatService.getChatByUsers(user, receiverId)
         return ResponseEntity.ok(chats)
+    }
+
+
+    @GetMapping("/{chatId}/assets")
+    @Operation(
+        summary = "Get assets for a specific chat",
+        responses = [
+            ApiResponse(
+                responseCode = "200",
+                description = "Retrieved assets successfully",
+                content = [Content(schema = Schema(implementation = Page::class))]
+            ),
+            ApiResponse(
+                responseCode = "404",
+                description = "Chat not found",
+                content = [Content(schema = Schema(implementation = ExceptionResponse::class))]
+            ),
+            ApiResponse(
+                responseCode = "403",
+                description = "Not allowed to access this chat",
+                content = [Content(schema = Schema(implementation = ExceptionResponse::class))]
+            )
+        ]
+    )
+    suspend fun getChatAssets(
+        authentication: Authentication,
+        @PathVariable chatId: Long,
+        @RequestParam assetTypes: List<String>,
+        @RequestParam(defaultValue = "0") page: Int,
+        @RequestParam(defaultValue = "15") size: Int
+    ): ResponseEntity<Page<ChatAssetResponse>> {
+        val cognitoId = CognitoIdExtractor.extractCognitoId(authentication) ?: throw NotAllowedException("Not valid token")
+        val user = userService.getSessionUser(cognitoId)
+        val assets = chatService.getChatAssets(chatId, user, assetTypes, page, size)
+        return ResponseEntity.ok(assets)
     }
 
 }

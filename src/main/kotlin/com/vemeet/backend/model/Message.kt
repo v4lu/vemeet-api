@@ -1,5 +1,6 @@
 package com.vemeet.backend.model
 
+import com.vemeet.backend.utils.MessageTypeConverter
 import jakarta.persistence.*
 import java.time.Instant
 
@@ -17,8 +18,10 @@ data class Message(
     @JoinColumn(name = "sender_id", nullable = false)
     val sender: User = User(),
 
+
+
     @Column(name = "message_type", nullable = false)
-    val messageType: String = "",
+    val messageType: MessageType = MessageType.TEXT,
 
     @Column(name = "encrypted_content")
     val encryptedContent: ByteArray? = null,
@@ -36,7 +39,10 @@ data class Message(
     var readAt: Instant? = null,
 
     @Column(name = "is_one_time")
-    val isOneTime: Boolean = false
+    val isOneTime: Boolean = false,
+
+    @Column(name = "content_preview")
+    val contentPreview: String? = null
 ) {
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
@@ -60,6 +66,7 @@ data class Message(
         if (createdAt != other.createdAt) return false
         if (readAt != other.readAt) return false
         if (isOneTime != other.isOneTime) return false
+        if (contentPreview != other.contentPreview) return false
 
         return true
     }
@@ -75,7 +82,13 @@ data class Message(
         result = 31 * result + createdAt.hashCode()
         result = 31 * result + (readAt?.hashCode() ?: 0)
         result = 31 * result + isOneTime.hashCode()
+        result = 31 * result + (contentPreview?.hashCode() ?: 0)
         return result
     }
+}
 
+
+
+enum class MessageType {
+    TEXT, IMAGE, VIDEO, AUDIO, FILE, URL
 }

@@ -1,18 +1,14 @@
 package com.vemeet.backend.service
 
-import com.vemeet.backend.dto.ChatResponse
-import com.vemeet.backend.dto.EncryptionResponse
-import com.vemeet.backend.dto.MessageResponse
-import com.vemeet.backend.dto.SendMessageRequest
+import com.vemeet.backend.dto.*
 import com.vemeet.backend.exception.NotAllowedException
 import com.vemeet.backend.exception.ResourceNotFoundException
 import com.vemeet.backend.model.*
+import com.vemeet.backend.repository.ChatAssetRepository
 import com.vemeet.backend.repository.ChatRepository
 import com.vemeet.backend.repository.MessageRepository
 import com.vemeet.backend.repository.UserRepository
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.async
-import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
 import org.apache.coyote.BadRequestException
 import org.springframework.data.domain.Page
@@ -31,11 +27,13 @@ class ChatService(
     private val messageRepository: MessageRepository,
     private val userRepository: UserRepository,
     private val chatRepository: ChatRepository,
+    private val chatAssetRepository: ChatAssetRepository,
     private val webClient: WebClient,
     private val userService: UserService,
     private val chatWebSocketService: ChatWebSocketService,
     private val notificationService: NotificationService,
 ) {
+
     @Transactional
     suspend fun sendMessage(sender: User, request: SendMessageRequest): MessageResponse {
         val (chat, recipient) = if (request.firstTime) {
@@ -48,12 +46,18 @@ class ChatService(
 
         val encryptionResponse = encryptMessage(request.content)
         val message = createMessage(chat, sender, request, encryptionResponse)
-        val savedMessage = saveMessage(message)
+        val savedMessage =  withContext(Dispatchers.IO) {
+            messageRepository.save(message)
+        }
+
+        val chatAsset = request.chatAsset?.let { assetRequest ->
+            createAndSaveChatAsset(savedMessage, chat, assetRequest)
+        }
 
         updateChatStatus(chat, sender, savedMessage)
         notifyRecipient(recipient, sender)
 
-        val res = decryptedMessage(savedMessage, sender)
+        val res = decryptedMessage(savedMessage, sender, chatAsset)
         chatWebSocketService.sendMessage(recipient.id, res)
         return res
     }
@@ -64,32 +68,35 @@ class ChatService(
             chatRepository.findChatsWithLastMessageByUserId(user.id)
         }
         return chatsWithLastMessages.map { chatWithLastMessage ->
+            val lastMessage = chatWithLastMessage.lastMessage
+            val chatAsset = lastMessage?.let { chatAssetRepository.findByMessageId(it.id) }
             ChatResponse.from(
                 chat = chatWithLastMessage.chat,
                 sessionUser = user,
-                lastMessage = chatWithLastMessage.lastMessage?.let { decryptedMessage(it, user) }
+                lastMessage = lastMessage?.let { decryptedMessage(it, user, chatAsset) }
             )
         }
     }
 
-    fun getChatMessages(chatId: Long, user: User, page: Int, size: Int): Page<MessageResponse> {
-        val chat = chatRepository.findById(chatId).orElseThrow { ResourceNotFoundException("Chat not found") }
+    suspend fun getChatMessages(chatId: Long, user: User, page: Int, size: Int): Page<MessageResponse> {
+        val chat = withContext(Dispatchers.IO) {
+            chatRepository.findById(chatId)
+        }.orElseThrow { ResourceNotFoundException("Chat not found") }
         if (chat.user1.id != user.id && chat.user2.id != user.id) {
             throw NotAllowedException("You don't have access to this chat")
         }
         updateSeenStatus(chat, user)
 
         val pageable = PageRequest.of(page, size, Sort.by("createdAt").descending())
-        val messagesPage = messageRepository.findByChatIdOrderByCreatedAtDesc(chatId, pageable)
-
-        // Use runBlocking to bridge between non-suspend and suspend functions
-        val decryptedMessages = runBlocking(Dispatchers.Default) {
-            messagesPage.content.map { message ->
-                async { decryptedMessage(message, user) }
-            }.map { it.await() }
+        val messagesPage = withContext(Dispatchers.IO) {
+            messageRepository.findByChatIdOrderByCreatedAtDesc(chatId, pageable)
         }
 
-        // Create a new Page with decrypted messages
+        val decryptedMessages = messagesPage.content.map { message ->
+            val chatAsset = chatAssetRepository.findByMessageId(message.id)
+            decryptedMessage(message, user, chatAsset)
+        }
+
         return PageImpl(decryptedMessages, pageable, messagesPage.totalElements)
     }
 
@@ -102,7 +109,8 @@ class ChatService(
 
     }
 
-    private suspend fun decryptedMessage(message: Message, sessionUser: User): MessageResponse {
+
+    private suspend fun decryptedMessage(message: Message, sessionUser: User, chatAsset: ChatAsset?): MessageResponse {
         val decryptedContent = if (message.encryptedContent != null) {
             try {
                 val decryptionResponse = webClient.post()
@@ -121,7 +129,26 @@ class ChatService(
             null
         }
 
-        return MessageResponse.from(message, decryptedContent, sessionUser)
+        return MessageResponse.from(message, decryptedContent, sessionUser, chatAsset)
+    }
+
+
+    suspend fun getChatAssets(chatId: Long, user: User, assetTypes: List<String>, page: Int, size: Int): Page<ChatAssetResponse> {
+        val chat = withContext(Dispatchers.IO) {
+            chatRepository.findById(chatId)
+        }.orElseThrow { ResourceNotFoundException("Chat not found") }
+        if (chat.user1.id != user.id && chat.user2.id != user.id) {
+            throw NotAllowedException("You don't have access to this chat")
+        }
+
+        val pageable = PageRequest.of(page, size, Sort.by("createdAt").descending())
+        val assetsPage = withContext(Dispatchers.IO) {
+            chatAssetRepository.findByChatIdAndFileTypeIn(chatId, assetTypes, pageable)
+        }
+
+        val assetResponses = assetsPage.content.map { ChatAssetResponse.from(it) }
+
+        return PageImpl(assetResponses, pageable, assetsPage.totalElements)
     }
 
 
@@ -211,10 +238,17 @@ class ChatService(
         )
     }
 
-    private suspend fun saveMessage(message: Message): Message {
-        return withContext(Dispatchers.IO) {
-            messageRepository.save(message)
-        }
+      private fun createAndSaveChatAsset(message: Message, chat: Chat, assetRequest: ChatAssetRequest): ChatAsset {
+        val chatAsset = ChatAsset(
+            message = message,
+            chat = chat,
+            fileType = assetRequest.fileType,
+            fileSize = assetRequest.fileSize,
+            mimeType = assetRequest.mimeType,
+            durationSeconds = assetRequest.durationSeconds,
+            encryptedFilePath = assetRequest.assetUrl
+        )
+        return chatAssetRepository.save(chatAsset)
     }
 
     private suspend fun updateChatStatus(chat: Chat, sender: User, lastMessage: Message) {
