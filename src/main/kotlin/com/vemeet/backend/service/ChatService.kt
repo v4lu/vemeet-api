@@ -17,8 +17,6 @@ import org.springframework.data.domain.PageRequest
 import org.springframework.data.domain.Sort
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
-import org.springframework.web.reactive.function.client.WebClient
-import org.springframework.web.reactive.function.client.awaitBody
 import java.time.Instant
 import java.util.*
 
@@ -28,23 +26,24 @@ class ChatService(
     private val userRepository: UserRepository,
     private val chatRepository: ChatRepository,
     private val chatAssetRepository: ChatAssetRepository,
-    private val webClient: WebClient,
     private val userService: UserService,
     private val chatWebSocketService: ChatWebSocketService,
     private val notificationService: NotificationService,
+    private val cryptoService: CryptoService
 ) {
 
     @Transactional
     suspend fun sendMessage(sender: User, request: SendMessageRequest): MessageResponse {
+        if (sender.id == request.recipientId) {
+            throw BadRequestException("You cannot create a chat with yourself")
+        }
         val (chat, recipient) = if (request.firstTime) {
             createNewChat(sender, request.recipientId)
         } else {
             getExistingChat(sender, request.recipientId)
         }
 
-        validateMessageSending(sender, recipient)
-
-        val encryptionResponse = encryptMessage(request.content)
+        val encryptionResponse =  cryptoService.encrypt(request.content)
         val message = createMessage(chat, sender, request, encryptionResponse)
         val savedMessage =  withContext(Dispatchers.IO) {
             messageRepository.save(message)
@@ -113,15 +112,9 @@ class ChatService(
     private suspend fun decryptedMessage(message: Message, sessionUser: User, chatAsset: ChatAsset?): MessageResponse {
         val decryptedContent = if (message.encryptedContent != null) {
             try {
-                val decryptionResponse = webClient.post()
-                    .uri("http://localhost:9002/v1/crypto/decrypt")
-                    .bodyValue(mapOf(
-                        "encrypted_message" to Base64.getEncoder().encodeToString(message.encryptedContent),
-                        "encrypted_data_key" to Base64.getEncoder().encodeToString(message.encryptedDataKey)
-                    ))
-                    .retrieve()
-                    .awaitBody<Map<String, String>>()
-                decryptionResponse["decrypted_message"]
+                val decryptionResponse =
+                    message.encryptedDataKey?.let { cryptoService.decrypt(message.encryptedContent, it) }
+                decryptionResponse
             } catch (e: Exception) {
                 throw RuntimeException("Failed to decrypt message: ${e.message}")
             }
@@ -133,8 +126,6 @@ class ChatService(
 
         return MessageResponse.from(message, decryptedContent, sessionUser, chatAsset, decryptedFileUrl)
     }
-
-
 
     suspend fun getChatAssets(chatId: Long, user: User, assetTypes: List<String>, page: Int, size: Int): Page<ChatAssetResponse> {
         val chat = withContext(Dispatchers.IO) {
@@ -155,10 +146,6 @@ class ChatService(
         }
 
         return PageImpl(assetResponses, pageable, assetsPage.totalElements)
-    }
-
-    private fun isFollowing(followerId: Long, followedId: Long): Boolean {
-        return true // Placeholder
     }
 
     private  fun updateSeenStatus(chat: Chat, user: User) {
@@ -213,24 +200,6 @@ class ChatService(
         return Pair(chat, recipient)
     }
 
-    private fun validateMessageSending(sender: User, recipient: User) {
-        if (recipient.inboxLocked && !isFollowing(sender.id, recipient.id)) {
-            throw NotAllowedException("Cannot send message to this user")
-        }
-    }
-
-    private suspend fun encryptMessage(content: String): EncryptionResponse {
-        return try {
-            webClient.post()
-                .uri("http://localhost:9002/v1/crypto/encrypt")
-                .bodyValue(mapOf("message" to content))
-                .retrieve()
-                .awaitBody()
-        } catch (e: Exception) {
-            throw RuntimeException("Failed to encrypt message: ${e.message}")
-        }
-    }
-
     private fun createMessage(chat: Chat, sender: User, request: SendMessageRequest, encryptionResponse: EncryptionResponse): Message {
         return Message(
             chat = chat,
@@ -244,7 +213,7 @@ class ChatService(
     }
 
     private suspend fun createAndSaveChatAsset(message: Message, chat: Chat, assetRequest: ChatAssetRequest): ChatAsset {
-        val filePathEncryptionResponse = encryptMessage(assetRequest.assetUrl)
+        val filePathEncryptionResponse =  cryptoService.encrypt(assetRequest.assetUrl)
         val chatAsset = ChatAsset(
             message = message,
             chat = chat,
@@ -279,15 +248,7 @@ class ChatService(
     private suspend fun decryptFileUrl(chatAsset: ChatAsset): String? {
         return if (chatAsset.encryptedFilePath != null && chatAsset.filePathEncryptedDataKey != null) {
             try {
-                val decryptionResponse = webClient.post()
-                    .uri("http://localhost:9002/v1/crypto/decrypt")
-                    .bodyValue(mapOf(
-                        "encrypted_message" to Base64.getEncoder().encodeToString(chatAsset.encryptedFilePath),
-                        "encrypted_data_key" to Base64.getEncoder().encodeToString(chatAsset.filePathEncryptedDataKey)
-                    ))
-                    .retrieve()
-                    .awaitBody<Map<String, String>>()
-                decryptionResponse["decrypted_message"]
+                cryptoService.decrypt(chatAsset.encryptedFilePath, chatAsset.filePathEncryptedDataKey)
             } catch (e: Exception) {
                 throw RuntimeException("Failed to decrypt file URL: ${e.message}")
             }
