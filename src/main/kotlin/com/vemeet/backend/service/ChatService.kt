@@ -34,6 +34,10 @@ class ChatService(
 
     @Transactional
     suspend fun sendMessage(sender: User, request: SendMessageRequest): MessageResponse {
+        if (request.content.isNullOrBlank() && request.chatAssets.isNullOrEmpty()) {
+            throw BadRequestException("Message should not be blank!")
+        }
+
         if (sender.id == request.recipientId) {
             throw BadRequestException("You cannot create a chat with yourself")
         }
@@ -43,8 +47,26 @@ class ChatService(
             getExistingChat(sender, request.recipientId)
         }
 
-        val encryptionResponse = cryptoService.encrypt(request.content)
-        val message = createMessage(chat, sender, request, encryptionResponse)
+        val (encryptedContent, encryptedDataKey, encryptionVersion) = if (request.content is String && request.content.isNotBlank()) {
+            val encryptionResponse = cryptoService.encrypt(request.content)
+            Triple(
+                Base64.getDecoder().decode(encryptionResponse.encryptedMessage),
+                Base64.getDecoder().decode(encryptionResponse.encryptedDataKey),
+                encryptionResponse.keyVersion
+            )
+        } else {
+            Triple(null, null, null)
+        }
+
+        val message = Message(
+            chat = chat,
+            sender = sender,
+            messageType = request.messageType,
+            encryptedContent = encryptedContent,
+            encryptedDataKey = encryptedDataKey,
+            encryptionVersion = encryptionVersion,
+            isOneTime = request.isOneTime
+        )
         val savedMessage = withContext(Dispatchers.IO) {
             messageRepository.save(message)
         }
@@ -60,6 +82,7 @@ class ChatService(
         chatWebSocketService.sendMessage(recipient.id, res)
         return res
     }
+
 
     suspend fun getUserChats(user: User): List<ChatResponse> {
         val chatsWithLastMessages = withContext(Dispatchers.IO) {
@@ -196,18 +219,6 @@ class ChatService(
 
         val recipient = if (chat.user1.id == sender.id) chat.user2 else chat.user1
         return Pair(chat, recipient)
-    }
-
-    private fun createMessage(chat: Chat, sender: User, request: SendMessageRequest, encryptionResponse: EncryptionResponse): Message {
-        return Message(
-            chat = chat,
-            sender = sender,
-            messageType = request.messageType,
-            encryptedContent = if (request.content.isNotBlank()) Base64.getDecoder().decode(encryptionResponse.encryptedMessage) else null,
-            encryptedDataKey = Base64.getDecoder().decode(encryptionResponse.encryptedDataKey),
-            encryptionVersion = encryptionResponse.keyVersion,
-            isOneTime = request.isOneTime
-        )
     }
 
     private suspend fun createAndSaveChatAsset(message: Message, chat: Chat, assetRequest: ChatAssetRequest): ChatAsset {

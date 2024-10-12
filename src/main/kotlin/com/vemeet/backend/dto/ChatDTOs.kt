@@ -2,6 +2,7 @@ package com.vemeet.backend.dto
 
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.vemeet.backend.model.*
+import org.jetbrains.annotations.NotNull
 import java.time.format.DateTimeFormatter
 
 data class ChatResponse(
@@ -40,13 +41,18 @@ data class ChatResponse(
 
 data class SendMessageRequest(
     val recipientId: Long,
+
+    @field:NotNull("Message type is required")
     val messageType: MessageType,
-    val content: String,
+
+    val content: String?,
     val isOneTime: Boolean = false,
+
+    @field:NotNull("FirstTime flag is required")
     val firstTime: Boolean,
+
     val chatAssets: List<ChatAssetRequest>?
 )
-
 
 data class MessageResponse(
     val id: Long,

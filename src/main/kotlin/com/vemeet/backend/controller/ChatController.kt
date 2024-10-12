@@ -10,6 +10,7 @@ import io.swagger.v3.oas.annotations.media.Content
 import io.swagger.v3.oas.annotations.media.Schema
 import io.swagger.v3.oas.annotations.responses.ApiResponse
 import io.swagger.v3.oas.annotations.tags.Tag
+import jakarta.validation.Valid
 import org.springframework.data.domain.Page
 import org.springframework.http.ResponseEntity
 import org.springframework.security.core.Authentication
@@ -108,7 +109,7 @@ class ChatController(
     )
     suspend fun sendMessage(
         authentication: Authentication,
-        @RequestBody request: SendMessageRequest
+        @Valid @RequestBody request: SendMessageRequest
     ): ResponseEntity<MessageResponse> {
         val cognitoId = CognitoIdExtractor.extractCognitoId(authentication)  ?: throw NotAllowedException("Not valid token")
         val user = userService.getSessionUser(cognitoId)
