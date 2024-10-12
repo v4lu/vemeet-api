@@ -214,7 +214,7 @@ data class VeganLocationUpdateRequest(
     @Schema(description = "Website URL", example = "https://www.greencafe.com")
     val websiteUrl: String? = null,
 
-    @field:Pattern(regexp = "^\\+?[0-9]{10,20}$", message = "Invalid phone number format")
+    @field:Pattern(regexp = "^$|^\\+?[0-9]{10,20}$", message = "Invalid phone number format")
     @Schema(description = "Phone number", example = "+1234567890")
     val phoneNumber: String? = null,
 
