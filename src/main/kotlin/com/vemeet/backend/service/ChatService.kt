@@ -76,10 +76,10 @@ class ChatService(
         }
 
         updateChatStatus(chat, sender, savedMessage)
-        notifyRecipient(recipient, sender)
 
         val res = decryptedMessage(savedMessage, sender, chatAssets)
         chatWebSocketService.sendMessage(recipient.id, res)
+        notificationService.createNotification(recipient.id, NotificationTypeEnum.NEW_MESSAGE.typeName,  "New message from ${sender.username}")
         return res
     }
 
@@ -264,10 +264,5 @@ class ChatService(
         } else {
             null
         }
-    }
-
-    private suspend fun notifyRecipient(recipient: User, sender: User) {
-        val content = "New message from ${sender.username}"
-        notificationService.createNotification(recipient.id, NotificationTypeEnum.NEW_MESSAGE.toString().lowercase(), content)
     }
 }

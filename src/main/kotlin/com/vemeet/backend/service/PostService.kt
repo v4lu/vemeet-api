@@ -24,6 +24,7 @@ class PostService(
     private val imageRepository: ImageRepository,
     private val reactionRepository: ReactionRepository,
     private val contentTypeRepository: ContentTypeRepository,
+    private val notificationService: NotificationService,
     private val userCache: UserCache
 ) {
 
@@ -155,6 +156,14 @@ class PostService(
                 reactionType = request.reactionType
             )
             reactionRepository.save(newReaction)
+        }
+
+        if (postOwner.id != currentUser.id) {
+            notificationService.createNotification(
+                postOwner.id,
+                NotificationTypeEnum.NEW_REACTION.typeName,
+                "${currentUser.username} liked your post"
+            )
         }
 
         post.reactions = reactionRepository.findByContentTypeAndContentId(contentType, postId)

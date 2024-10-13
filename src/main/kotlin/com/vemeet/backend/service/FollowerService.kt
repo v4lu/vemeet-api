@@ -5,6 +5,7 @@ import com.vemeet.backend.dto.*
 import com.vemeet.backend.exception.ResourceNotFoundException
 import com.vemeet.backend.model.FollowRequest
 import com.vemeet.backend.model.Follower
+import com.vemeet.backend.model.NotificationTypeEnum
 import com.vemeet.backend.model.User
 import com.vemeet.backend.repository.FollowRequestRepository
 import com.vemeet.backend.repository.FollowerRepository
@@ -17,7 +18,8 @@ import java.time.format.DateTimeFormatter
 class FollowerService(
     private val followerRepository: FollowerRepository,
     private val userRepository: UserRepository,
-    private val followRequestRepository: FollowRequestRepository
+    private val followRequestRepository: FollowRequestRepository,
+    private val notificationService: NotificationService
 ) {
 
     @Transactional
@@ -48,6 +50,12 @@ class FollowerService(
 
             val newFollower = Follower(follower = user, followed = followed)
             val savedFollower = followerRepository.save(newFollower)
+
+            notificationService.createNotification(
+                followed.id,
+                NotificationTypeEnum.NEW_FOLLOWER.typeName,
+                "${user.username} started following you"
+            )
 
             return MessageFollowResponse(
                 message = "Followed ${savedFollower.followed.username}"
@@ -95,6 +103,12 @@ class FollowerService(
         val newFollower = Follower(follower = request.requester, followed = request.target)
         followerRepository.save(newFollower)
         followRequestRepository.delete(request)
+
+        notificationService.createNotification(
+            request.requester.id,
+            NotificationTypeEnum.NEW_FOLLOWER.typeName,
+            "${user.username} accepted your follow request"
+        )
     }
 
     @Transactional

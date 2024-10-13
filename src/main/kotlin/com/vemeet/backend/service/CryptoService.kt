@@ -15,7 +15,7 @@ class CryptoService(
     suspend fun encrypt(message: String): EncryptionResponse {
         return try {
             webClient.post()
-                .uri("http://localhost:9002/v1/crypto/encrypt")
+                .uri("http://encrpytion:9002/v1/crypto/encrypt")
                 .bodyValue(mapOf("message" to message))
                 .retrieve()
                 .awaitBody()
@@ -27,7 +27,7 @@ class CryptoService(
     suspend fun decrypt(encryptedMessage: ByteArray, encryptedDataKey: ByteArray): String {
         return try {
             val response = webClient.post()
-                .uri("http://localhost:9002/v1/crypto/decrypt")
+                .uri("http://encrpytion:9002/v1/crypto/decrypt")
                 .bodyValue(mapOf(
                     "encrypted_message" to Base64.getEncoder().encodeToString(encryptedMessage),
                     "encrypted_data_key" to Base64.getEncoder().encodeToString(encryptedDataKey)

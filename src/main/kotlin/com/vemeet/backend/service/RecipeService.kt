@@ -18,9 +18,9 @@ class RecipeService(
     private val userService: UserService,
     private val categoryRepository: RecipeCategoryRepository,
     private val tagRepository: TagRepository,
-    private val recipeImageRepository: RecipeImageRepository,
     private val reactionRepository: ReactionRepository,
-    private val contentTypeRepository: ContentTypeRepository
+    private val contentTypeRepository: ContentTypeRepository,
+    private val notificationService: NotificationService,
 ) {
 
     @Transactional
@@ -181,6 +181,14 @@ class RecipeService(
         }
 
         recipe.reactions = reactionRepository.findByContentTypeAndContentId(contentType, recipeId)
+
+        if (recipe.user.id != currentUser.id) {
+            notificationService.createNotification(
+                recipe.user.id,
+                NotificationTypeEnum.NEW_REACTION.typeName,
+                "${currentUser.username} liked your recipe: ${recipe.title}"
+            )
+        }
 
         return mapToRecipeResponse(recipe, recipe.user)
     }

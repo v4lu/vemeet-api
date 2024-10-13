@@ -17,7 +17,8 @@ class SwipeService(
     private val userRepository: UserRepository,
     private val matchRepository: MatchRepository,
     private val swiperUserProfileRepository : SwipeUserProfile,
-    private val potentialMatchRepository: PotentialMatchRepository
+    private val potentialMatchRepository: PotentialMatchRepository,
+    private val notificationService: NotificationService
 ) {
 
     fun getMatches(user: User): List<UserResponse> {
@@ -46,17 +47,14 @@ class SwipeService(
             checkForMatch(swiper, swipedUser)
         } else false
 
-        return SwipeResponse.fromSwipe(savedSwipe, isMatch)
-    }
 
-    private fun checkForMatch(user1: User, user2: User): Boolean {
-        val existingSwipe = swipeRepository.findBySwiperAndSwipedAndDirection(user2, user1, "right")
-        if (existingSwipe != null) {
-            val match = Match(user1 = user1, user2 = user2)
-            matchRepository.save(match)
-            return true
-        }
-        return false
+        notificationService.createNotification(
+            request.swipedUserId,
+            NotificationTypeEnum.NEW_MATCH.typeName,
+            "${swiper.username} liked you!"
+        )
+
+        return SwipeResponse.fromSwipe(savedSwipe, isMatch)
     }
 
     fun getPotentialMatches(user: User, pageable: Pageable): Page<SwiperPotencialUserProfileResponse> {
@@ -104,5 +102,24 @@ class SwipeService(
     }
 
 
+    private fun checkForMatch(user1: User, user2: User): Boolean {
+        val existingSwipe = swipeRepository.findBySwiperAndSwipedAndDirection(user2, user1, "right")
+        if (existingSwipe != null) {
+            val match = Match(user1 = user1, user2 = user2)
+            matchRepository.save(match)
+            return true
+        }
 
+        notificationService.createNotification(
+            user1.id,
+            NotificationTypeEnum.NEW_MATCH.typeName,
+            "${user2.username} is a match!"
+        )
+        notificationService.createNotification(
+            user2.id,
+            NotificationTypeEnum.NEW_MATCH.typeName,
+            "${user1.username} is a match!"
+        )
+        return false
+    }
 }
