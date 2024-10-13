@@ -75,7 +75,7 @@ class StoryController(
             )
         ]
     )
-    fun getUserStories(@PathVariable userId: Long): ResponseEntity<List<StoryResponse>> {
+    suspend fun getUserStories(@PathVariable userId: Long): ResponseEntity<List<StoryResponse>> {
         val stories = storyService.getUserStories(userId)
         return ResponseEntity.ok(stories)
     }
@@ -95,7 +95,7 @@ class StoryController(
             )
         ]
     )
-    fun getStoryDetails(@PathVariable storyId: Long): ResponseEntity<StoryResponse> {
+    suspend fun getStoryDetails(@PathVariable storyId: Long): ResponseEntity<StoryResponse> {
         val story = storyService.getStoryDetails(storyId)
         return ResponseEntity.ok(story)
     }
@@ -256,4 +256,26 @@ class StoryController(
         storyService.deleteStoryGroup(user, groupId)
         return ResponseEntity.noContent().build()
     }
+
+    @GetMapping("/followed")
+    @Operation(
+        summary = "Get stories from followed users",
+        description = "Retrieves all active stories from users that the authenticated user follows",
+        responses = [
+            ApiResponse(
+                responseCode = "200", description = "Successfully retrieved",
+                content = [Content(schema = Schema(implementation = Array<StoryResponse>::class))]
+            ),
+            ApiResponse(
+                responseCode = "401", description = "Unauthorized - Invalid token",
+                content = [Content(schema = Schema(implementation = ExceptionResponse::class))]
+            )
+        ]
+    )
+    suspend fun getFollowedUsersStories(authentication: Authentication): ResponseEntity<List<UserStoriesResponse>> {
+        val cognitoId = CognitoIdExtractor.extractCognitoId(authentication) ?: throw NotAllowedException("Not valid token")
+        val user = userService.getSessionUser(cognitoId)
+        val stories = storyService.getFollowedUsersStories(user.id)
+        return ResponseEntity.ok(stories)
+    } 
 }

@@ -9,7 +9,9 @@ import jakarta.transaction.Transactional
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.springframework.stereotype.Service
+import java.time.Duration
 import java.time.Instant
+import java.util.Base64
 
 
 @Service
@@ -19,6 +21,8 @@ class StoryService(
     private val storyViewRepository: StoryViewRepository,
     private val storyGroupRepository: StoryGroupRepository,
     private val profileStoryRepository: ProfileStoryRepository,
+    private val followerService: FollowerService,
+    private val userService: UserService,
     private val cryptoService: CryptoService
 )  {
 
@@ -42,34 +46,43 @@ class StoryService(
             story = savedStory,
             assetType = request.assetType,
             contentType = request.contentType,
-            duration = request.duration?.let { java.time.Duration.parse(it) },
+            duration = request.duration?.let { Duration.parse(it) },
             width = request.width,
             height = request.height,
-            encryptedFilePath = encryptionResponse.encryptedMessage.toByteArray(),
-            filePathEncryptedDataKey = encryptionResponse.encryptedDataKey.toByteArray(),
+            encryptedFilePath =  Base64.getDecoder().decode(encryptionResponse.encryptedMessage),
+            filePathEncryptedDataKey = Base64.getDecoder().decode(encryptionResponse.encryptedDataKey),
             filePathEncryptionVersion = encryptionResponse.keyVersion,
         )
         val savedAsset = withContext(Dispatchers.IO) {
             storyAssetRepository.save(asset)
         }
 
-        return StoryResponse.fromStory(savedStory, savedAsset)
+
+        return StoryResponse.fromStory(savedStory, savedAsset, request.fileContent)
     }
 
 
-    fun getUserStories(userId: Long): List<StoryResponse> {
-        val stories = storyRepository.findByUserIdAndExpiresAtAfter(userId, Instant.now())
+    suspend fun getUserStories(userId: Long): List<StoryResponse> {
+        val stories = withContext(Dispatchers.IO) {
+            storyRepository.findByUserIdAndExpiresAtAfter(userId, Instant.now())
+        }
         return stories.map { story ->
             val asset = storyAssetRepository.findByStoryId(story.id)
-            StoryResponse.fromStory(story, asset)
+            val url = getDecryptedFileContent(story.id)
+            StoryResponse.fromStory(story, asset, url)
         }
     }
 
 
-    fun getStoryDetails(storyId: Long): StoryResponse {
-        val story = storyRepository.findById(storyId).orElseThrow { ResourceNotFoundException("Story not found") }
-        val asset = storyAssetRepository.findByStoryId(story.id)
-        return StoryResponse.fromStory(story, asset)
+    suspend  fun getStoryDetails(storyId: Long): StoryResponse {
+        val story = withContext(Dispatchers.IO) {
+            storyRepository.findById(storyId)
+        }.orElseThrow { ResourceNotFoundException("Story not found") }
+        val asset = withContext(Dispatchers.IO) {
+            storyAssetRepository.findByStoryId(story.id)
+        }
+        val url = getDecryptedFileContent(storyId)
+        return StoryResponse.fromStory(story, asset, url)
     }
 
     @Transactional
@@ -139,6 +152,24 @@ class StoryService(
         storyGroupRepository.delete(group)
     }
 
+
+
+    suspend fun getFollowedUsersStories(userId: Long): List<UserStoriesResponse> {
+        val followedUserIds = followerService.getFollowedUserIds(userId)
+        val now = Instant.now()
+        val oneDayAgo = now.minus(Duration.ofDays(1))
+
+        return withContext(Dispatchers.IO) {
+            followedUserIds.map { followedUserId ->
+                val user = userService.getUserByIdFull(followedUserId)
+                val stories = storyRepository.findByUserIdAndCreatedAtAfterAndExpiresAtAfter(followedUserId, oneDayAgo, now)
+                val storyIds = stories.map { it.id }
+                val assets = storyAssetRepository.findByStoryIdIn(storyIds).associateBy { it.story.id }
+                val urls = storyIds.associateWith { getDecryptedFileContent(it) }
+                UserStoriesResponse.fromUserAndStories(user, stories, assets, urls)
+            }
+        }
+    }
     suspend fun getDecryptedFileContent(storyId: Long): String {
         val asset = withContext(Dispatchers.IO) {
             storyAssetRepository.findByStoryId(storyId)

@@ -3,28 +3,6 @@ package com.vemeet.backend.dto
 import com.vemeet.backend.model.*
 import io.swagger.v3.oas.annotations.media.Schema
 
-@Schema(description = "Profile Story Response object")
-data class ProfileStoryResponse(
-    @Schema(description = "Profile Story ID", example = "1")
-    val id: Long,
-
-    @Schema(description = "User ID", example = "1")
-    val userId: Long,
-
-    @Schema(description = "Creation date", example = "2024-08-27T10:30:00Z")
-    val createdAt: String
-) {
-    companion object {
-        fun fromProfileStory(profileStory: ProfileStory): ProfileStoryResponse {
-            return ProfileStoryResponse(
-                id = profileStory.id,
-                userId = profileStory.userId,
-                createdAt = profileStory.createdAt.toString()
-            )
-        }
-    }
-}
-
 @Schema(description = "Story Group Response object")
 data class StoryGroupResponse(
     @Schema(description = "Story Group ID", example = "1")
@@ -83,7 +61,7 @@ data class StoryResponse(
     val asset: StoryAssetResponse?
 ) {
     companion object {
-        fun fromStory(story: Story, asset: StoryAsset?): StoryResponse {
+        fun fromStory(story: Story, asset: StoryAsset?, url: String): StoryResponse {
             return StoryResponse(
                 id = story.id,
                 userId = story.userId,
@@ -91,7 +69,7 @@ data class StoryResponse(
                 createdAt = story.createdAt.toString(),
                 expiresAt = story.expiresAt.toString(),
                 viewCount = story.viewCount,
-                asset = asset?.let { StoryAssetResponse.fromStoryAsset(it) }
+                asset = asset?.let { StoryAssetResponse.fromStoryAsset(it, url) }
             )
         }
     }
@@ -118,10 +96,13 @@ data class StoryAssetResponse(
     val height: Int?,
 
     @Schema(description = "Creation date", example = "2024-08-27T10:30:00Z")
-    val createdAt: String
+    val createdAt: String,
+
+    @Schema(description = "Url", example = "https://example.com/image.jpg")
+    val url: String,
 ) {
     companion object {
-        fun fromStoryAsset(asset: StoryAsset): StoryAssetResponse {
+        fun fromStoryAsset(asset: StoryAsset, url: String): StoryAssetResponse {
             return StoryAssetResponse(
                 id = asset.id,
                 assetType = asset.assetType,
@@ -129,7 +110,8 @@ data class StoryAssetResponse(
                 duration = asset.duration?.toString(),
                 width = asset.width,
                 height = asset.height,
-                createdAt = asset.createdAt.toString()
+                createdAt = asset.createdAt.toString(),
+                url = url,
             )
         }
     }
@@ -181,7 +163,7 @@ data class CreateStoryRequest(
     @Schema(description = "Height", example = "1920")
     val height: Int?,
 
-    @Schema(description = "File content (Base64 encoded)", example = "base64encodedstring")
+    @Schema(description = "url", example = "https://email.com")
     val fileContent: String
 )
 
@@ -196,3 +178,25 @@ data class CreateStoryGroupRequest(
     @Schema(description = "Image URL", example = "https://example.com/image.jpg")
     val imageUrl: String?
 )
+
+@Schema(description = "User Stories Response object")
+data class UserStoriesResponse(
+    @Schema(description = "User information")
+    val user: UserResponse,
+
+    @Schema(description = "List of user's stories")
+    val userStories: List<StoryResponse>
+) {
+    companion object {
+        fun fromUserAndStories(user: User, stories: List<Story>, assets: Map<Long, StoryAsset>, urls: Map<Long, String>): UserStoriesResponse {
+            return UserStoriesResponse(
+                user = UserResponse.fromUser(user),
+                userStories = stories.map { story ->
+                    val asset = assets[story.id]
+                    val url = urls[story.id] ?: ""
+                    StoryResponse.fromStory(story, asset, url)
+                }
+            )
+        }
+    }
+}

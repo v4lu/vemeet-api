@@ -18,7 +18,15 @@ interface StoryGroupRepository : JpaRepository<StoryGroup, Long> {
 @Repository
 interface StoryRepository : JpaRepository<Story, Long> {
     fun findByUserIdAndExpiresAtAfter(userId: Long, instant: Instant): List<Story>
+    fun findByUserIdAndCreatedAtAfterAndExpiresAtAfter(
+        userId: Long,
+        createdAfter: Instant,
+        expiresAfter: Instant
+    ): List<Story>
+
+
 }
+
 
 @Repository
 interface StoryViewRepository : JpaRepository<StoryView, Long> {
@@ -28,4 +36,5 @@ interface StoryViewRepository : JpaRepository<StoryView, Long> {
 @Repository
 interface StoryAssetRepository : JpaRepository<StoryAsset, Long> {
     fun findByStoryId(storyId: Long): StoryAsset?
+    fun findByStoryIdIn(storyIds: List<Long>): List<StoryAsset>
 }

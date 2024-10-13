@@ -119,4 +119,8 @@ class FollowerService(
             )
         }
     }
+
+    fun getFollowedUserIds(userId: Long): List<Long> {
+        return followerRepository.findByFollowerId(userId).map { it.followed.id }
+    }
 }
