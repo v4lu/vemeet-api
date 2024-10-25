@@ -6,6 +6,8 @@ import com.fasterxml.jackson.annotation.JsonProperty
 import com.fasterxml.jackson.databind.JsonNode
 import com.vemeet.backend.model.Recipe
 import com.vemeet.backend.model.User
+import jakarta.validation.constraints.NotBlank
+import jakarta.validation.constraints.Size
 import java.time.format.DateTimeFormatter
 
 @Schema(description = "Request object for creating a new recipe")
@@ -40,6 +42,7 @@ data class CreateRecipeRequest @JsonCreator constructor(
     @Schema(description = "List of tag IDs", example = "[1, 2, 3]", required = false)
     @JsonProperty("tagIds") val tagIds: List<Long>?
 )
+
 
 @Schema(description = "Response object for recipe details")
 data class RecipeResponse(
@@ -117,6 +120,9 @@ data class RecipeResponse(
 
 @Schema(description = "Request object for updating an existing recipe")
 data class UpdateRecipeRequest @JsonCreator constructor(
+
+    @field:NotBlank(message = "Title is required")
+    @field:Size(min = 2, max = 50, message = "Title must be between 2 and 50 characters")
     @Schema(description = "Recipe title", example = "Updated Vegan Chocolate Cake", required = false)
     @JsonProperty("title") val title: String?,
 
@@ -135,21 +141,25 @@ data class UpdateRecipeRequest @JsonCreator constructor(
     @Schema(description = "List of image URLs", example = """["http://example.com/updated_image1.jpg", "http://example.com/updated_image2.jpg"]""", required = false)
     @JsonProperty("imageUrls") val imageUrls: List<String>?,
 
+
     @Schema(description = "Number of servings", example = "10", required = false)
     @JsonProperty("servings") val servings: Int?,
 
     @Schema(description = "Recipe difficulty", example = "HARD", required = false)
     @JsonProperty("difficulty") val difficulty: String?,
 
-    @Schema(description = "Category ID", example = "2", required = false)
+    @field:NotBlank(message = "Category  is required")
     @JsonProperty("categoryId") val categoryId: Long?,
 
     @Schema(description = "List of tag IDs", example = "[2, 3, 4]", required = false)
     @JsonProperty("tagIds") val tagIds: List<Long>?
 )
 
+
 @Schema(description = "Create Category Request")
-data class CategoryRequest (
+data class CategoryRequest(
+    @field:NotBlank(message = "Category name is required")
+    @field:Size(min = 2, max = 50, message = "Category name must be between 2 and 50 characters")
     @Schema(description = "name of category")
     val name: String,
 )

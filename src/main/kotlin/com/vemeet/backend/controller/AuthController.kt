@@ -32,7 +32,6 @@ class AuthController(
     val cognitoService: CognitoService,
 ) {
 
-    private val logger = LoggerFactory.getLogger(AuthController::class.java)
 
     @PostMapping("/register")
     @Operation(
@@ -48,8 +47,9 @@ class AuthController(
     )
     fun register(@Valid @RequestBody regReq: RegisterRequest): ResponseEntity<RegisterResponse> {
         try {
-            if (authService.findByUsername(regReq.username) != null) {
-                throw ConflictException("Username already exists")
+            if (authService.usernameExists(regReq.username)) {
+                println("Username already exists")
+                throw ConflictException("Please use a different email or username")
             }
 
             val additionalAttributes = mapOf(
@@ -61,14 +61,8 @@ class AuthController(
 
             return ResponseEntity.ok(userRes)
         } catch (e: EmailAlreadyExistsException) {
-            // If the email already exists in Cognito, we don't need to do anything else
-            throw EmailAlreadyExistsException("Email already exists")
+            throw EmailAlreadyExistsException("Please use a different email or username.")
         } catch (e: Exception) {
-            try {
-                cognitoService.deleteUser(regReq.email)
-            } catch (deleteException: Exception) {
-                logger.error("Failed to delete Cognito user after error: ${deleteException.message}")
-            }
             throw e
         }
     }

@@ -139,6 +139,8 @@ class AuthService(
         }
     }
 
+    fun usernameExists(username: String): Boolean = userRepository.existsByUsername(username)
+
     @Transactional
     fun deleteAccount(accessToken: String) {
         val cognitoId = cognitoService.getUserSub(accessToken)
