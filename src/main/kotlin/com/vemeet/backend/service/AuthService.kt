@@ -6,6 +6,7 @@ import com.amazonaws.services.cognitoidp.model.UserNotFoundException
 import com.vemeet.backend.cache.SessionCache
 import com.vemeet.backend.cache.UserCache
 import com.vemeet.backend.dto.*
+import com.vemeet.backend.exception.EmailAlreadyExistsException
 import com.vemeet.backend.exception.NotConfirmedEmailException
 import com.vemeet.backend.exception.ResourceNotFoundException
 import com.vemeet.backend.model.Image
@@ -152,19 +153,25 @@ class AuthService(
         sessionCache.deleteUserSession(accessToken)
     }
 
+
     fun initiateEmailChange(accessToken: String, newEmail: String) {
-        cognitoService.getCognitoUserByEmail(newEmail)
-        cognitoService.initiateUpdateUserAttribute(accessToken, "email", newEmail)
+        try {
+            cognitoService.getCognitoUserByEmail(newEmail)
+            throw EmailAlreadyExistsException("Email $newEmail is already in use")
+        } catch (e: UserNotFoundException) {
+            // Email doesn't exist, proceed with the change
+            cognitoService.initiateUpdateUserAttribute(accessToken, "email", newEmail)
+        } catch (e: Exception) {
+            throw e // for other exceptions
+        }
     }
+
 
     fun confirmEmailChange(accessToken: String, confirmationCode: String) {
         cognitoService.confirmUpdateUserAttribute(accessToken, "email", confirmationCode)
     }
 
-    fun findByUsername(username: String): User? = userRepository.findUserByUsername(username)
     fun findByAwsCognitoId(awsCognitoId: String): User? =  userRepository.findUserByAwsCognitoId(awsCognitoId)
 
-
-
-
+    fun getUserEmail(accessToken: String): String? = cognitoService.getEmailByAccessToken(accessToken)
 }

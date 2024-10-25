@@ -3,6 +3,7 @@ package com.vemeet.backend.controller
 import com.vemeet.backend.dto.*
 import com.vemeet.backend.exception.ConflictException
 import com.vemeet.backend.exception.EmailAlreadyExistsException
+import com.vemeet.backend.exception.ResourceNotFoundException
 import com.vemeet.backend.security.CognitoService
 import com.vemeet.backend.service.AuthService
 import com.vemeet.backend.utils.extractAccessToken
@@ -16,6 +17,7 @@ import org.apache.coyote.BadRequestException
 import org.slf4j.LoggerFactory
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.DeleteMapping
+import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PatchMapping
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
@@ -285,5 +287,27 @@ class AuthController(
         val accessToken = extractAccessToken(authHeader)
         authService.deleteAccount(accessToken)
         return ResponseEntity.ok(AuthMessageResponse("Account deleted successfully"))
+    }
+
+
+    @GetMapping("/email")
+    @Operation(
+        summary = "Get user's Email",
+        responses = [
+            ApiResponse(responseCode = "200", description = "Received email successfully",
+                content = [Content(schema = Schema(implementation = AuthMessageResponse::class))]),
+            ApiResponse(responseCode = "401", description = "Unauthorized - Invalid or missing token",
+                content = [Content(schema = Schema(implementation = ExceptionResponse::class))]),
+            ApiResponse(responseCode = "404", description = "User not found",
+                content = [Content(schema = Schema(implementation = ExceptionResponse::class))]),
+            ApiResponse(responseCode = "500", description = "Internal server error",
+                content = [Content(schema = Schema(implementation = ExceptionResponse::class))])
+        ]
+    )
+    fun getEmail(@RequestHeader("Authorization") authHeader: String): ResponseEntity<EmailResponse> {
+        val accessToken = extractAccessToken(authHeader)
+        val email = authService.getUserEmail(accessToken)
+            ?: throw ResourceNotFoundException("Email not found")
+        return ResponseEntity.ok(EmailResponse(email))
     }
 }

@@ -152,24 +152,34 @@ class StoryService(
         storyGroupRepository.delete(group)
     }
 
-
-
     suspend fun getFollowedUsersStories(userId: Long): List<UserStoriesResponse> {
         val followedUserIds = followerService.getFollowedUserIds(userId)
         val now = Instant.now()
         val oneDayAgo = now.minus(Duration.ofDays(1))
 
         return withContext(Dispatchers.IO) {
-            followedUserIds.map { followedUserId ->
-                val user = userService.getUserByIdFull(followedUserId)
-                val stories = storyRepository.findByUserIdAndCreatedAtAfterAndExpiresAtAfter(followedUserId, oneDayAgo, now)
-                val storyIds = stories.map { it.id }
-                val assets = storyAssetRepository.findByStoryIdIn(storyIds).associateBy { it.story.id }
-                val urls = storyIds.associateWith { getDecryptedFileContent(it) }
-                UserStoriesResponse.fromUserAndStories(user, stories, assets, urls)
-            }
+            followedUserIds
+                .map { followedUserId ->
+                    val stories = storyRepository.findByUserIdAndCreatedAtAfterAndExpiresAtAfter(
+                        followedUserId,
+                        oneDayAgo,
+                        now
+                    )
+
+                    if (stories.isNotEmpty()) {
+                        val user = userService.getUserByIdFull(followedUserId)
+                        val storyIds = stories.map { it.id }
+                        val assets = storyAssetRepository.findByStoryIdIn(storyIds).associateBy { it.story.id }
+                        val urls = storyIds.associateWith { getDecryptedFileContent(it) }
+                        UserStoriesResponse.fromUserAndStories(user, stories, assets, urls)
+                    } else {
+                        null
+                    }
+                }
+                .filterNotNull()
         }
     }
+
     suspend fun getDecryptedFileContent(storyId: Long): String {
         val asset = withContext(Dispatchers.IO) {
             storyAssetRepository.findByStoryId(storyId)
