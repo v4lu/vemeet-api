@@ -78,12 +78,12 @@ class AuthService(
         userCache.cacheIDUser(user.id, authResult.authenticationResult.expiresIn.toLong(), user)
 
         val now = Instant.now()
-        val thirtyDaysLater = now.plus(30, ChronoUnit.DAYS)
+        val tenYears = now.plus(3650, ChronoUnit.DAYS)
         val accessTokenExpiry =  now.plusSeconds(authResult.authenticationResult.expiresIn.toLong())
        return LoginResponse(
             cognitoId = cognitoId,
             refreshToken = authResult.authenticationResult.refreshToken,
-            refreshTokenExpiry = thirtyDaysLater,
+            refreshTokenExpiry = tenYears,
             accessToken = authResult.authenticationResult.accessToken,
             accessTokenExpiry = accessTokenExpiry
         )
