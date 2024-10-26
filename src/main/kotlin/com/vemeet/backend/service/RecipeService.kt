@@ -194,22 +194,7 @@ class RecipeService(
     }
 
 
-    @Transactional(readOnly = true)
-    fun findAllRecipes(
-        title: String?,
-        categoryId: Long?,
-        tagId: Long?,
-        difficulty: String?,
-        minServings: Int?,
-        maxServings: Int?,
-        createdAfter: Instant?,
-        createdBefore: Instant?,
-        pageable: Pageable,
-    ): Page<RecipeResponse> {
-        return recipeRepository.findAllWithFilters(
-            title, categoryId, tagId, difficulty, minServings, maxServings, createdAfter, createdBefore, pageable
-        ).map { mapToRecipeResponse(it, it.user) }
-    }
+
 
     @Transactional
     fun updateRecipe(id: Long, request: UpdateRecipeRequest, accessToken: String): RecipeResponse {

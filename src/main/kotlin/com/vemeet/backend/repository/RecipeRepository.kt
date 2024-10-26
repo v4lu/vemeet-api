@@ -27,8 +27,6 @@ interface RecipeRepository : JpaRepository<Recipe, Long> {
         AND (:difficulty IS NULL OR r.difficulty = :difficulty)
         AND (:minServings IS NULL OR r.servings >= :minServings)
         AND (:maxServings IS NULL OR r.servings <= :maxServings)
-        AND (:createdAfter IS NULL OR r.createdAt >= :createdAfter)
-        AND (:createdBefore IS NULL OR r.createdAt <= :createdBefore)
     """)
     fun findAllWithFilters(
         @Param("title") title: String?,
@@ -36,11 +34,8 @@ interface RecipeRepository : JpaRepository<Recipe, Long> {
         @Param("tagId") tagId: Long?,
         @Param("difficulty") difficulty: String?,
         @Param("minServings") minServings: Int?,
-        @Param("maxServings") maxServings: Int?,
-        @Param("createdAfter") createdAfter: Instant?,
-        @Param("createdBefore") createdBefore: Instant?,
-        pageable: Pageable
-    ): Page<Recipe>
+        @Param("maxServings") maxServings: Int?
+    ): List<Recipe>
 
     @Query("""
         SELECT r FROM Recipe r

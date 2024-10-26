@@ -86,32 +86,6 @@ class RecipeController(
         return ResponseEntity.noContent().build()
     }
 
-    @GetMapping("/search")
-    @Operation(summary = "Search recipes", description = "Search recipes with various filters and pagination")
-    @ApiResponse(responseCode = "200", description = "Successful search", content = [Content(schema = Schema(implementation = Page::class))])
-    fun searchRecipes(
-        @Parameter(description = "Search by title") @RequestParam title: String?,
-        @Parameter(description = "Filter by category ID") @RequestParam categoryId: Long?,
-        @Parameter(description = "Filter by tag ID") @RequestParam tagId: Long?,
-        @Parameter(description = "Filter by difficulty") @RequestParam difficulty: String?,
-        @Parameter(description = "Minimum number of servings") @RequestParam minServings: Int?,
-        @Parameter(description = "Maximum number of servings") @RequestParam maxServings: Int?,
-        @Parameter(description = "Created after date")
-        @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) createdAfter: Instant?,
-        @Parameter(description = "Created before date")
-        @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) createdBefore: Instant?,
-        @Parameter(description = "Page number") @RequestParam(defaultValue = "0") page: Int,
-        @Parameter(description = "Page size") @RequestParam(defaultValue = "20") size: Int,
-        @Parameter(description = "Sort by field") @RequestParam(defaultValue = "createdAt") sort: String,
-        @Parameter(description = "Sort direction") @RequestParam(defaultValue = "DESC") direction: Sort.Direction
-    ): ResponseEntity<Page<RecipeResponse>> {
-        val pageable = PageRequest.of(page, size, Sort.by(direction, sort))
-        val recipes = recipeService.findAllRecipes(
-            title, categoryId, tagId, difficulty, minServings, maxServings,
-            createdAfter, createdBefore, pageable
-        )
-        return ResponseEntity.ok(recipes)
-    }
 
     @GetMapping("/user/{userId}")
     @Operation(summary = "Get user recipes")

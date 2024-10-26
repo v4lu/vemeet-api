@@ -74,7 +74,6 @@ class ChatService(
         val chatAssets = request.chatAssets?.map { assetRequest ->
             createAndSaveChatAsset(savedMessage, chat, assetRequest)
         }
-
         updateChatStatus(chat, sender, savedMessage)
 
         val res = decryptedMessage(savedMessage, sender, chatAssets)

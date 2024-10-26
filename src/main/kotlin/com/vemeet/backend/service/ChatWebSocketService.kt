@@ -13,7 +13,6 @@ import java.util.concurrent.ConcurrentHashMap
 @Service
 class ChatWebSocketService(private val objectMapper: ObjectMapper) : TextWebSocketHandler() {
     private val sessions = ConcurrentHashMap<Long, MutableSet<WebSocketSession>>()
-    private val logger = LoggerFactory.getLogger(ChatWebSocketService::class.java)
 
     override fun afterConnectionEstablished(session: WebSocketSession) {
         val userId = session.attributes["userId"] as? Long
@@ -35,10 +34,8 @@ class ChatWebSocketService(private val objectMapper: ObjectMapper) : TextWebSock
     }
 
     fun sendMessage(recipientId: Long, message: MessageResponse) {
-        logger.info("Attempting to send message to user: $recipientId")
         val userSessions = sessions[recipientId]
         if (userSessions.isNullOrEmpty()) {
-            logger.warn("No active sessions found for user $recipientId")
             return
         }
 
@@ -51,18 +48,14 @@ class ChatWebSocketService(private val objectMapper: ObjectMapper) : TextWebSock
                 try {
                     session.sendMessage(TextMessage(messageJson))
                     sentCount++
-                    logger.debug("Message sent successfully to session ${session.id} for user $recipientId")
                 } catch (e: Exception) {
                     failedCount++
-                    logger.error("Error sending message to session ${session.id} for user $recipientId", e)
                     sessions[recipientId]?.remove(session)
                 }
             } else {
-                logger.warn("Session ${session.id} for user $recipientId is closed. Removing from sessions.")
                 sessions[recipientId]?.remove(session)
             }
         }
 
-        logger.info("Message sending attempt completed. Sent: $sentCount, Failed: $failedCount, Total sessions: ${userSessions.size}")
     }
 }
