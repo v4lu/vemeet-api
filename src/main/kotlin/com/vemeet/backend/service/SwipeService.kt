@@ -107,19 +107,20 @@ class SwipeService(
         if (existingSwipe != null) {
             val match = Match(user1 = user1, user2 = user2)
             matchRepository.save(match)
+
+            notificationService.createNotification(
+                user1.id,
+                NotificationTypeEnum.NEW_MATCH.typeName,
+                "${user2.username} is a match!"
+            )
+
+            notificationService.createNotification(
+                user2.id,
+                NotificationTypeEnum.NEW_MATCH.typeName,
+                "${user1.username} is a match!"
+            )
             return true
         }
-
-        notificationService.createNotification(
-            user1.id,
-            NotificationTypeEnum.NEW_MATCH.typeName,
-            "${user2.username} is a match!"
-        )
-        notificationService.createNotification(
-            user2.id,
-            NotificationTypeEnum.NEW_MATCH.typeName,
-            "${user1.username} is a match!"
-        )
         return false
     }
 }
