@@ -6,7 +6,10 @@ import com.vemeet.backend.dto.VeganLocationResponse
 import com.vemeet.backend.repository.RecipeRepository
 import com.vemeet.backend.repository.UserRepository
 import com.vemeet.backend.repository.VeganLocationRepository
+import org.springframework.data.domain.Page
+import org.springframework.data.domain.Pageable
 import org.springframework.stereotype.Service
+import java.time.Duration
 
 
 @Service
@@ -54,6 +57,49 @@ class SearchService(
             country = country,
             verified = verified
         )
+        return locations.map { VeganLocationResponse.fromVeganLocation(it) }
+    }
+
+
+    fun searchUsersByLocation(
+        latitude: Double,
+        longitude: Double,
+        maxDistance: Double = 1000.0,
+        pageable: Pageable
+    ): Page<UserResponse> {
+        val users =
+            userRepository.findUsersNearLocation(
+                latitude = latitude,
+                longitude = longitude,
+                maxDistance = maxDistance,
+                pageable = pageable
+            )
+        return users.map { UserResponse.fromUser(it) }
+    }
+
+    fun searchLocationsNearby(
+        latitude: Double,
+        longitude: Double,
+        maxDistance: Double = 1000.0,
+        query: String? = null,
+        type: String? = null,
+        city: String? = null,
+        country: String? = null,
+        verified: Boolean? = null,
+        pageable: Pageable
+    ): Page<VeganLocationResponse> {
+        val locations = veganLocationRepository.findLocationsNearby(
+            latitude = latitude,
+            longitude = longitude,
+            maxDistanceKm = maxDistance,
+            query = query,
+            type = type,
+            verified = verified,
+            city = city,
+            country = country,
+            pageable = pageable
+        )
+
         return locations.map { VeganLocationResponse.fromVeganLocation(it) }
     }
 }
