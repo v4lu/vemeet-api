@@ -85,7 +85,7 @@ class ChatService(
 
     suspend fun getUserChats(user: User): List<ChatResponse> {
         val chatsWithLastMessages = withContext(Dispatchers.IO) {
-            chatRepository.findChatsWithLastMessageByUserId(user.id)
+            chatRepository.findChatsWithLastMessageByUserIdOrderByCreatedAtAsc(user.id)
         }
         return chatsWithLastMessages.map { chatWithLastMessage ->
             val lastMessage = chatWithLastMessage.lastMessage
@@ -109,7 +109,7 @@ class ChatService(
 
         val pageable = PageRequest.of(page, size, Sort.by("createdAt").descending())
         val messagesPage = withContext(Dispatchers.IO) {
-            messageRepository.findByChatIdOrderByCreatedAtDesc(chatId, pageable)
+            messageRepository.findByChatIdOrderByCreatedAtAsc(chatId, pageable)
         }
 
         val decryptedMessages = messagesPage.content.map { message ->

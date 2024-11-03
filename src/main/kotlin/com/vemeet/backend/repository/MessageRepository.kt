@@ -29,7 +29,7 @@ interface ChatRepository : JpaRepository<Chat, Long> {
         )
         WHERE c.user1.id = :userId OR c.user2.id = :userId
     """)
-    fun findChatsWithLastMessageByUserId(@Param("userId") userId: Long): List<ChatWithLastMessage>
+    fun findChatsWithLastMessageByUserIdOrderByCreatedAtAsc(@Param("userId") userId: Long): List<ChatWithLastMessage>
 
 
     
@@ -37,7 +37,7 @@ interface ChatRepository : JpaRepository<Chat, Long> {
 
 @Repository
 interface MessageRepository : JpaRepository<Message, Long> {
-    fun findByChatIdOrderByCreatedAtDesc(chatId: Long, pageable: Pageable): Page<Message>}
+    fun findByChatIdOrderByCreatedAtAsc(chatId: Long, pageable: Pageable): Page<Message>}
 
 
 @Repository
