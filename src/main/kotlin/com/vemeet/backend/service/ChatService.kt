@@ -109,7 +109,7 @@ class ChatService(
 
         val pageable = PageRequest.of(page, size, Sort.by("createdAt").descending())
         val messagesPage = withContext(Dispatchers.IO) {
-            messageRepository.findByChatIdOrderByCreatedAtAsc(chatId, pageable)
+            messageRepository.findByChatIdOrderByCreatedAtDesc(chatId, pageable)
         }
 
         val decryptedMessages = messagesPage.content.map { message ->

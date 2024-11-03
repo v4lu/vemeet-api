@@ -37,7 +37,7 @@ interface ChatRepository : JpaRepository<Chat, Long> {
 
 @Repository
 interface MessageRepository : JpaRepository<Message, Long> {
-    fun findByChatIdOrderByCreatedAtAsc(chatId: Long, pageable: Pageable): Page<Message>}
+    fun findByChatIdOrderByCreatedAtDesc(chatId: Long, pageable: Pageable): Page<Message>}
 
 
 @Repository
