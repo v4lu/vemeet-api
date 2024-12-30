@@ -194,4 +194,12 @@ class SearchController(private val searchService: SearchService) {
 
         return ResponseEntity.ok(results)
     }
+
+    @GetMapping("/recipes/popular")
+    @Operation(summary = "Search popular recipes")
+    fun searchPopularRecipes(): ResponseEntity<Page<RecipeResponse>> {
+        val pageable = PageRequest.of(0, 40)
+        val results = searchService.searchLatestRecipes(pageable)
+        return ResponseEntity.ok(results)
+    }
 }

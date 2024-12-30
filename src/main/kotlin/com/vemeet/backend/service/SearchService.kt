@@ -102,4 +102,11 @@ class SearchService(
 
         return locations.map { VeganLocationResponse.fromVeganLocation(it) }
     }
+
+    fun searchLatestRecipes(
+        pageable: Pageable
+    ): Page<RecipeResponse> {
+        val recipes = recipeRepository.findAllByOrderByCreatedAtDesc(pageable)
+        return recipes.map { RecipeResponse.fromRecipe(it, it.user) }
+    }
 }

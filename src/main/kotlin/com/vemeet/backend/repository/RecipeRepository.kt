@@ -49,6 +49,8 @@ interface RecipeRepository : JpaRepository<Recipe, Long> {
         ORDER BY r.createdAt DESC
     """)
     fun findFeedRecipesForUser(userId: Long, pageable: Pageable): Page<Recipe>
+
+    fun findAllByOrderByCreatedAtDesc(pageable: Pageable): Page<Recipe>
 }
 
 @Repository
