@@ -73,7 +73,11 @@ class UserService(
 
         val updatedUser = userRepository.save(user)
         sessionCache.deleteUserSession(accessToken)
+        userCache.deleteIDUser(user.id)
+        userCache.deleteAWSUser(user.awsCognitoId)
         sessionCache.cacheUserSession(accessToken, 3600, updatedUser) // 1h
+        userCache.cacheIDUser(updatedUser.id, 3600, updatedUser)
+        userCache.cacheAWSUser(updatedUser.awsCognitoId, 3600, updatedUser)
         return updatedUser
     }
 
