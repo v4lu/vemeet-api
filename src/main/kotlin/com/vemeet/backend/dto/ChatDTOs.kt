@@ -7,8 +7,8 @@ import java.time.format.DateTimeFormatter
 
 data class ChatResponse(
     val id: Long,
-    val sessionUser: User,
-    val otherUser: User,
+    val sessionUser: UserResponse,
+    val otherUser: UserResponse,
     val lastMessage: MessageResponse?,
     val sessionUserSeenStatus: Boolean,
     val otherUserSeenStatus: Boolean,
@@ -26,8 +26,8 @@ data class ChatResponse(
 
             return ChatResponse(
                 id = chat.id,
-                sessionUser = sessionUser,
-                otherUser = otherUser,
+                sessionUser = UserResponse.fromUser(sessionUser),
+                otherUser = UserResponse.fromUser(otherUser),
                 lastMessage = lastMessage,
                 sessionUserSeenStatus = sessionUserSeenStatus,
                 otherUserSeenStatus = otherUserSeenStatus,
@@ -57,14 +57,14 @@ data class SendMessageRequest(
 data class MessageResponse(
     val id: Long,
     val chatId: Long,
-    val sender: User,
+    val sender: UserResponse,
     val messageType: MessageType,
     val content: String?,
     val contentPreview: String?,
     val createdAt: String,
     val readAt: String?,
     val isOneTime: Boolean,
-    val recipient: User,
+    val recipient: UserResponse,
     val isSessionUserSender: Boolean,
     val chatAssets: List<ChatAssetResponse>?
 ) {
@@ -76,14 +76,14 @@ data class MessageResponse(
             return MessageResponse(
                 id = message.id,
                 chatId = message.chat.id,
-                sender = message.sender,
+                sender = UserResponse.fromUser(message.sender),
                 messageType = message.messageType,
                 content = decryptedContent,
                 contentPreview = message.contentPreview,
                 createdAt = DateTimeFormatter.ISO_INSTANT.format(message.createdAt),
                 readAt = message.readAt?.let { DateTimeFormatter.ISO_INSTANT.format(it) },
                 isOneTime = message.isOneTime,
-                recipient = recipient,
+                recipient = UserResponse.fromUser(recipient),
                 isSessionUserSender = isSessionUserSender,
                 chatAssets = chatAssets?.mapIndexed { index, asset ->
                     ChatAssetResponse.from(asset, decryptedFileUrls?.getOrNull(index))
