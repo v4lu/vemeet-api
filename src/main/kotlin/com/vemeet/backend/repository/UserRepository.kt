@@ -13,6 +13,7 @@ interface UserRepository: JpaRepository<User, Long> {
     fun findUserById(id: Long): User?
     fun existsByUsername(username: String): Boolean
 
+
     @Query("SELECT u FROM User u WHERE LOWER(u.username) LIKE LOWER(CONCAT('%', :query, '%')) OR LOWER(u.name) LIKE LOWER(CONCAT('%', :query, '%'))")
     fun searchByUsernameOrName(query: String): List<User>
 
@@ -39,5 +40,4 @@ interface UserRepository: JpaRepository<User, Long> {
         @Param("maxDistance") maxDistance: Double,
         pageable: Pageable
     ): Page<User>
-
 }
