@@ -6,6 +6,7 @@ import com.vemeet.backend.exception.ResourceNotFoundException
 import com.vemeet.backend.exception.NotAllowedException
 import com.vemeet.backend.model.Comment
 import com.vemeet.backend.model.CommentReaction
+import com.vemeet.backend.model.NotificationTypeEnum
 import com.vemeet.backend.model.User
 import com.vemeet.backend.repository.CommentReactionRepository
 import com.vemeet.backend.repository.CommentRepository
@@ -18,7 +19,8 @@ class CommentService(
     private val commentRepository: CommentRepository,
     private val commentReactionRepository: CommentReactionRepository,
     private val postRepository: PostRepository,
-    private val recipeRepository: RecipeRepository
+    private val recipeRepository: RecipeRepository,
+    private val notificationService: NotificationService
 ) {
 
     @Transactional
@@ -32,15 +34,15 @@ class CommentService(
             content = request.content
         )
 
+        var recipeUser = User()
         when {
             request.parentId != null -> {
                 val parentComment = commentRepository.findById(request.parentId)
                     .orElseThrow { ResourceNotFoundException("Parent comment not found") }
 
-                // For sub-comments, we only set the parent
                 comment.parent = parentComment
+                recipeUser = comment.user
 
-                // Validate that the parent comment belongs to the specified post or recipe, if provided
                 when {
                     postId != null && parentComment.post?.id != postId ->
                         throw IllegalArgumentException("Parent comment does not belong to the specified post")
@@ -49,16 +51,25 @@ class CommentService(
                 }
             }
             postId != null -> {
-                comment.post = postRepository.findById(postId)
+                val post = postRepository.findById(postId)
                     .orElseThrow { ResourceNotFoundException("Post not found") }
+                comment.post = post
+                recipeUser = post.user
             }
             recipeId != null -> {
-                comment.recipe = recipeRepository.findById(recipeId)
+                val recipe = recipeRepository.findById(recipeId)
                     .orElseThrow { ResourceNotFoundException("Recipe not found") }
+                comment.recipe = recipe
+                recipeUser = recipe.user
             }
         }
 
         val savedComment = commentRepository.save(comment)
+        notificationService.createNotification(
+            recipeUser.id,
+            NotificationTypeEnum.NEW_COMMENT.typeName,
+            "New comment from ${user.username}"
+        )
         return CommentResponse.fromComment(savedComment)
     }
 
@@ -109,6 +120,15 @@ class CommentService(
             )
             commentReactionRepository.save(newReaction)
             comment.reactions.add(newReaction)
+        }
+
+        val commentOwner = comment.user
+        if (commentOwner.id != user.id) {  // Don't notify if user likes his own post ( crazy but okay )
+            notificationService.createNotification(
+                commentOwner.id,
+                NotificationTypeEnum.NEW_REACTION.typeName,
+                "${user.username} reacted to your comment"
+            )
         }
         return CommentResponse.fromComment(comment)
     }

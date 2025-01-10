@@ -3,6 +3,7 @@ package com.vemeet.backend.controller
 import com.vemeet.backend.dto.*
 import com.vemeet.backend.exception.ConflictException
 import com.vemeet.backend.exception.EmailAlreadyExistsException
+import com.vemeet.backend.exception.ResourceNotFoundException
 import com.vemeet.backend.security.CognitoService
 import com.vemeet.backend.service.AuthService
 import com.vemeet.backend.utils.extractAccessToken
@@ -16,6 +17,7 @@ import org.apache.coyote.BadRequestException
 import org.slf4j.LoggerFactory
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.DeleteMapping
+import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PatchMapping
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
@@ -32,7 +34,6 @@ class AuthController(
     val cognitoService: CognitoService,
 ) {
 
-    private val logger = LoggerFactory.getLogger(AuthController::class.java)
 
     @PostMapping("/register")
     @Operation(
@@ -48,8 +49,9 @@ class AuthController(
     )
     fun register(@Valid @RequestBody regReq: RegisterRequest): ResponseEntity<RegisterResponse> {
         try {
-            if (authService.findByUsername(regReq.username) != null) {
-                throw ConflictException("Username already exists")
+            if (authService.usernameExists(regReq.username)) {
+                println("Username already exists")
+                throw ConflictException("Please use a different email or username")
             }
 
             val additionalAttributes = mapOf(
@@ -61,14 +63,8 @@ class AuthController(
 
             return ResponseEntity.ok(userRes)
         } catch (e: EmailAlreadyExistsException) {
-            // If the email already exists in Cognito, we don't need to do anything else
-            throw EmailAlreadyExistsException("Email already exists")
+            throw EmailAlreadyExistsException("Please use a different email or username.")
         } catch (e: Exception) {
-            try {
-                cognitoService.deleteUser(regReq.email)
-            } catch (deleteException: Exception) {
-                logger.error("Failed to delete Cognito user after error: ${deleteException.message}")
-            }
             throw e
         }
     }
@@ -103,12 +99,15 @@ class AuthController(
                 content = [Content(schema = Schema(implementation = LoginResponse::class))]),
             ApiResponse(responseCode = "401", description = "Invalid Credentials even if user not found",
                 content = [Content(schema = Schema(implementation = ExceptionResponse::class))]),
+            ApiResponse(responseCode = "403", description = "Not confirmed email",
+                content = [Content(schema = Schema(implementation = ExceptionResponse::class))]),
             ApiResponse(responseCode = "422", description = "Validation error - invalid input",
                 content = [Content(schema = Schema(implementation = ExceptionResponse::class))])
         ]
     )
     fun login(@Valid @RequestBody logReq: LoginRequest): ResponseEntity<LoginResponse> {
-        return authService.login(logReq)
+        return  ResponseEntity.ok(authService.login(logReq))
+
     }
 
 
@@ -255,9 +254,7 @@ class AuthController(
         responses = [
             ApiResponse(responseCode = "200", description = "Password changed successfully",
                 content = [Content(schema = Schema(implementation = AuthMessageResponse::class))]),
-            ApiResponse(responseCode = "400", description = "Invalid old password",
-                content = [Content(schema = Schema(implementation = ExceptionResponse::class))]),
-            ApiResponse(responseCode = "401", description = "Unauthorized - Invalid or missing token",
+            ApiResponse(responseCode = "401", description = "Unauthorized - Invalid password / missing token",
                 content = [Content(schema = Schema(implementation = ExceptionResponse::class))]),
             ApiResponse(responseCode = "422", description = "Validation error - invalid input",
                 content = [Content(schema = Schema(implementation = ExceptionResponse::class))])
@@ -291,5 +288,27 @@ class AuthController(
         val accessToken = extractAccessToken(authHeader)
         authService.deleteAccount(accessToken)
         return ResponseEntity.ok(AuthMessageResponse("Account deleted successfully"))
+    }
+
+
+    @GetMapping("/email")
+    @Operation(
+        summary = "Get user's Email",
+        responses = [
+            ApiResponse(responseCode = "200", description = "Received email successfully",
+                content = [Content(schema = Schema(implementation = AuthMessageResponse::class))]),
+            ApiResponse(responseCode = "401", description = "Unauthorized - Invalid or missing token",
+                content = [Content(schema = Schema(implementation = ExceptionResponse::class))]),
+            ApiResponse(responseCode = "404", description = "User not found",
+                content = [Content(schema = Schema(implementation = ExceptionResponse::class))]),
+            ApiResponse(responseCode = "500", description = "Internal server error",
+                content = [Content(schema = Schema(implementation = ExceptionResponse::class))])
+        ]
+    )
+    fun getEmail(@RequestHeader("Authorization") authHeader: String): ResponseEntity<EmailResponse> {
+        val accessToken = extractAccessToken(authHeader)
+        val email = authService.getUserEmail(accessToken)
+            ?: throw ResourceNotFoundException("Email not found")
+        return ResponseEntity.ok(EmailResponse(email))
     }
 }

@@ -10,7 +10,7 @@ data class Post(
     val id: Long = 0,
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_id")
+    @JoinColumn(name = "user_id", nullable = false)
     val user: User = User(),
 
     @Column(columnDefinition = "text")
@@ -21,9 +21,6 @@ data class Post(
     var images: MutableList<PostImage> = mutableListOf(),
 
     @OneToMany(mappedBy = "post", cascade = [CascadeType.ALL], orphanRemoval = true)
-    var reactions: MutableList<Reaction> = mutableListOf(),
-
-    @OneToMany(mappedBy = "post", cascade = [CascadeType.ALL], orphanRemoval = true)
     var comments: MutableList<Comment> = mutableListOf(),
 
     @Column(name = "created_at")
@@ -31,4 +28,7 @@ data class Post(
 
     @Column(name = "updated_at")
     var updatedAt: Instant = Instant.now()
-)
+) {
+    @Transient
+    var reactions: List<Reaction> = listOf()
+}

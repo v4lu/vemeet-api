@@ -1,21 +1,21 @@
 package com.vemeet.backend.service
 
+import com.amazonaws.services.cognitoidp.model.UserNotConfirmedException
 import java.time.format.DateTimeFormatter
 import com.amazonaws.services.cognitoidp.model.UserNotFoundException
+import com.vemeet.backend.cache.SessionCache
 import com.vemeet.backend.cache.UserCache
 import com.vemeet.backend.dto.*
+import com.vemeet.backend.exception.EmailAlreadyExistsException
+import com.vemeet.backend.exception.NotConfirmedEmailException
 import com.vemeet.backend.exception.ResourceNotFoundException
 import com.vemeet.backend.model.Image
 import com.vemeet.backend.model.User
 import com.vemeet.backend.repository.UserRepository
 import com.vemeet.backend.security.CognitoService
 import jakarta.transaction.Transactional
-import org.springframework.http.HttpHeaders
-import org.springframework.http.ResponseCookie
-import org.springframework.http.ResponseEntity
 import org.springframework.security.authentication.BadCredentialsException
 import org.springframework.stereotype.Service
-import java.time.Duration
 import java.time.Instant
 import java.time.temporal.ChronoUnit
 
@@ -23,7 +23,8 @@ import java.time.temporal.ChronoUnit
 class AuthService(
     private val userRepository: UserRepository,
     private val cognitoService: CognitoService,
-    private val userCache: UserCache
+    private val sessionCache: SessionCache,
+    private val userCache: UserCache,
 ) {
 
     fun createUser(regReq: RegisterRequest, awsCognitoId: String):  RegisterResponse  {
@@ -54,32 +55,36 @@ class AuthService(
 
         val authResult = try {
             cognitoService.initiateAuth(logReq.email, logReq.password)
-        } catch (e: Exception) {
+        } catch (e: UserNotConfirmedException) {
+            throw NotConfirmedEmailException("User is not confirmed. Please confirm your account.")
+        }
+        catch (e: Exception) {
             throw BadCredentialsException("Invalid email or password")
         }
 
         val cognitoId = try {
             cognitoService.getUserSub(authResult.authenticationResult.accessToken)
         } catch (e: Exception) {
-            throw BadCredentialsException("Invalid email or password")
+           throw BadCredentialsException("Invalid email or password")
         }
 
         val user = findByAwsCognitoId(cognitoId)
             ?: throw UserNotFoundException("User not found in the database")
 
-        userCache.cacheUserSession(
-            authResult.authenticationResult.accessToken,
+        sessionCache.cacheUserSession(
+            cognitoId,
             authResult.authenticationResult.expiresIn.toLong(),
             user
         )
+        userCache.cacheIDUser(user.id, authResult.authenticationResult.expiresIn.toLong(), user)
 
         val now = Instant.now()
-        val thirtyDaysLater = now.plus(30, ChronoUnit.DAYS)
+        val tenYears = now.plus(3650, ChronoUnit.DAYS)
         val accessTokenExpiry =  now.plusSeconds(authResult.authenticationResult.expiresIn.toLong())
         val loginResponse = LoginResponse(
             cognitoId = cognitoId,
             refreshToken = authResult.authenticationResult.refreshToken,
-            refreshTokenExpiry = thirtyDaysLater,
+            refreshTokenExpiry = tenYears,
             accessToken = authResult.authenticationResult.accessToken,
             accessTokenExpiry = accessTokenExpiry
         )
@@ -111,8 +116,8 @@ class AuthService(
         val user = findByAwsCognitoId(cognitoId)
             ?: throw UserNotFoundException("User not found in the database")
 
-        userCache.cacheUserSession(
-            authResult.authenticationResult.accessToken,
+        sessionCache.cacheUserSession(
+            cognitoId,
             authResult.authenticationResult.expiresIn.toLong(),
             user
         )
@@ -140,8 +145,14 @@ class AuthService(
     }
 
     fun changePassword(accessToken: String, oldPassword: String, newPassword: String) {
-        cognitoService.changePassword(accessToken, oldPassword, newPassword)
+        try {
+            cognitoService.changePassword(accessToken, oldPassword, newPassword)
+        } catch (e: Exception) {
+            throw BadCredentialsException("Invalid password")
+        }
     }
+
+    fun usernameExists(username: String): Boolean = userRepository.existsByUsername(username)
 
     @Transactional
     fun deleteAccount(accessToken: String) {
@@ -151,30 +162,28 @@ class AuthService(
 
         cognitoService.deleteUser(accessToken)
         userRepository.delete(user)
-        userCache.deleteUserSession(accessToken)
+        sessionCache.deleteUserSession(accessToken)
     }
 
+
     fun initiateEmailChange(accessToken: String, newEmail: String) {
-        cognitoService.getCognitoUserByEmail(newEmail)
-        cognitoService.initiateUpdateUserAttribute(accessToken, "email", newEmail)
+        try {
+            cognitoService.getCognitoUserByEmail(newEmail)
+            throw EmailAlreadyExistsException("Email $newEmail is already in use")
+        } catch (e: UserNotFoundException) {
+            // Email doesn't exist, proceed with the change
+            cognitoService.initiateUpdateUserAttribute(accessToken, "email", newEmail)
+        } catch (e: Exception) {
+            throw e // for other exceptions
+        }
     }
+
 
     fun confirmEmailChange(accessToken: String, confirmationCode: String) {
         cognitoService.confirmUpdateUserAttribute(accessToken, "email", confirmationCode)
     }
 
-    fun findByUsername(username: String): User? = userRepository.findUserByUsername(username)
     fun findByAwsCognitoId(awsCognitoId: String): User? =  userRepository.findUserByAwsCognitoId(awsCognitoId)
 
-
-    private fun createSecureCookie(name: String, value: String, expiryDate: Instant): ResponseCookie {
-        return ResponseCookie.from(name, value)
-            .httpOnly(true)
-            .secure(true)
-            .path("/")
-            .maxAge(Duration.between(Instant.now(), expiryDate))
-            .sameSite("Strict")
-            .build()
-    }
-
+    fun getUserEmail(accessToken: String): String? = cognitoService.getEmailByAccessToken(accessToken)
 }

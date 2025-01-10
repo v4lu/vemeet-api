@@ -1,11 +1,11 @@
 package com.vemeet.backend.model
 
+import com.fasterxml.jackson.databind.JsonNode
 import jakarta.persistence.*
 import org.hibernate.annotations.Type
 import java.time.Duration
 import java.time.Instant
 import com.vladmihalcea.hibernate.type.json.JsonBinaryType
-import com.vladmihalcea.hibernate.type.json.JsonType
 
 @Entity
 @Table(name = "recipes")
@@ -20,16 +20,12 @@ data class Recipe(
     @Column(nullable = false)
     var title: String = "",
 
+    @OneToMany(mappedBy = "recipe", cascade = [CascadeType.ALL], orphanRemoval = true)
+    var ingredients: MutableList<Ingredient> = mutableListOf(),
+
     @Type(JsonBinaryType::class)
     @Column(columnDefinition = "jsonb")
-    var content: Map<String, Any>? = null,
-
-    @Column(nullable = false, columnDefinition = "text")
-    var instructions: String = "",
-
-    @Type(JsonType::class)
-    @Column(columnDefinition = "text[]", nullable = false)
-    var ingredients: List<String> = emptyList(),
+    var content: JsonNode? = null,
 
     @Column(name = "preparation_time")
     var preparationTime: Duration = Duration.ofMinutes(0),
@@ -39,8 +35,7 @@ data class Recipe(
 
     var servings: Int = 0,
 
-    @Enumerated(EnumType.STRING)
-    var difficulty: Difficulty = Difficulty.MEDIUM,
+    var difficulty: String = "",
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "category_id")
@@ -51,7 +46,7 @@ data class Recipe(
 
     @OneToMany(mappedBy = "recipe", cascade = [CascadeType.ALL], orphanRemoval = true)
     var comments: MutableList<Comment> = mutableListOf(),
-    
+
     @ManyToMany
     @JoinTable(
         name = "recipe_tags",
@@ -65,8 +60,22 @@ data class Recipe(
 
     @Column(name = "updated_at")
     var updatedAt: Instant = Instant.now()
-)
-
-enum class Difficulty {
-    EASY, MEDIUM, HARD
+) {
+    @Transient
+    var reactions: List<Reaction> = listOf()
 }
+
+
+@Entity
+@Table(name = "ingredients")
+data class Ingredient(
+    @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
+    val id: Long = 0,
+
+    @Column(nullable = false)
+    var name: String = "",
+
+    @ManyToOne
+    @JoinColumn(name = "recipe_id", nullable = false)
+    var recipe: Recipe = Recipe(),
+)

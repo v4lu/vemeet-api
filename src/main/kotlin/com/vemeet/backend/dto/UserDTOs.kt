@@ -28,35 +28,44 @@ data class UserResponse(
     @Schema(description = "Whether the user's profile is private", example = "false")
     val isPrivate: Boolean,
 
+    @Schema(description = "Whether the user's can be find in swipe mode", example = "false")
+    val swiperMode: Boolean,
+
     @Schema(description = "Whether the user's inbox is locked", example = "false")
     val inboxLocked: Boolean,
 
     @Schema(description = "User's gender", example = "Male")
     val gender: String?,
 
-    @Schema(description = "User's birthplace latitude", example = "40.7128")
-    val birthplaceLat: Double?,
-
-    @Schema(description = "User's birthplace longitude", example = "-74.0060")
-    val birthplaceLng: Double?,
-
-    @Schema(description = "User's birthplace name", example = "New York City")
-    val birthplaceName: String?,
-
-    @Schema(description = "User's residence latitude", example = "34.0522")
-    val residenceLat: Double?,
-
-    @Schema(description = "User's residence longitude", example = "-118.2437")
-    val residenceLng: Double?,
-
-    @Schema(description = "User's residence name", example = "Los Angeles")
-    val residenceName: String?,
-
     @Schema(description = "User's bio", example = "Software engineer and travel enthusiast")
     val bio: String?,
 
     @Schema(description = "User's full name", example = "John Doe")
     val name: String?,
+
+    @Schema(description = "User's country name", example = "United States")
+    val countryName: String?,
+
+    @Schema(description = "User's country flag", example = "🇺🇸")
+    val countryFlag: String?,
+
+    @Schema(description = "User's country ISO code", example = "US")
+    val countryIsoCode: String?,
+
+    @Schema(description = "User's country latitude", example = "37.0902")
+    val countryLat: Double?,
+
+    @Schema(description = "User's country longitude", example = "-95.7129")
+    val countryLng: Double?,
+
+    @Schema(description = "User's city name", example = "New York")
+    val cityName: String?,
+
+    @Schema(description = "User's city latitude", example = "40.7128")
+    val cityLat: Double?,
+
+    @Schema(description = "User's city longitude", example = "-74.0060")
+    val cityLng: Double?,
 
     @Schema(description = "User's profile image")
     val profileImage: ImageResponse?
@@ -72,15 +81,18 @@ data class UserResponse(
                 verified = user.verified,
                 isPrivate = user.isPrivate,
                 inboxLocked = user.inboxLocked,
+                swiperMode = user.swiperMode,
                 gender = user.gender,
-                birthplaceLat = user.birthplaceLat,
-                birthplaceLng = user.birthplaceLng,
-                birthplaceName = user.birthplaceName,
-                residenceLat = user.residenceLat,
-                residenceLng = user.residenceLng,
-                residenceName = user.residenceName,
                 bio = user.bio,
                 name = user.name,
+                countryName = user.countryName,
+                countryFlag = user.countryFlag,
+                countryIsoCode = user.countryIsoCode,
+                countryLat = user.countryLat,
+                countryLng = user.countryLng,
+                cityName = user.cityName,
+                cityLat = user.cityLat,
+                cityLng = user.cityLng,
                 profileImage = user.profileImage?.let { ImageResponse.fromImage(it) }
             )
         }
@@ -98,32 +110,41 @@ data class UserUpdateRequest(
     @Schema(description = "User's full name", example = "John Doe")
     val name: String?,
 
-    @Schema(description = "User's birthplace latitude", example = "40.7128")
-    val birthplaceLat: Double?,
-
-    @Schema(description = "User's birthplace longitude", example = "-74.0060")
-    val birthplaceLng: Double?,
-
     @Schema(description = "User's gender", example = "Female")
     val gender: String?,
 
-    @Schema(description = "User's birthplace name", example = "New York City")
-    val birthplaceName: String?,
+    @Schema(description = "User's country name", example = "United States")
+    val countryName: String?,
 
-    @Schema(description = "User's residence latitude", example = "34.0522")
-    val residenceLat: Double?,
+    @Schema(description = "User's country flag", example = "🇺🇸")
+    val countryFlag: String?,
 
-    @Schema(description = "User's residence longitude", example = "-118.2437")
-    val residenceLng: Double?,
+    @Schema(description = "User's country ISO code", example = "US")
+    val countryIsoCode: String?,
 
-    @Schema(description = "User's residence name", example = "Los Angeles")
-    val residenceName: String?,
+    @Schema(description = "User's country latitude", example = "37.0902")
+    val countryLat: Double?,
+
+    @Schema(description = "User's country longitude", example = "-95.7129")
+    val countryLng: Double?,
+
+    @Schema(description = "User's city name", example = "New York")
+    val cityName: String?,
+
+    @Schema(description = "User's city latitude", example = "40.7128")
+    val cityLat: Double?,
+
+    @Schema(description = "User's city longitude", example = "-74.0060")
+    val cityLng: Double?,
 
     @Schema(description = "Whether the user's profile is private", example = "false")
-    val isPrivate: Boolean?,
+    val isPrivate: Boolean,
 
     @Schema(description = "Whether the user's inbox is locked", example = "false")
     val inboxLocked: Boolean,
+
+    @Schema(description = "Whether the user's can be find in swipe mode", example = "false")
+    val swiperMode: Boolean,
 
     @Schema(description = "User's new profile image URL", example = "https://example.com/new-profile.jpg")
     @field:URL(message = "URL is required")

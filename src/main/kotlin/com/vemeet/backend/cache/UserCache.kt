@@ -9,22 +9,45 @@ import java.time.Duration
 class UserCache(private val redisTemplate: RedisTemplate<String, User>) {
 
     companion object {
-        private const val USER_SESSION_PREFIX = "user_session:"
-
+        private const val USER_AWS_PREFIX = "user_aws:"
+        private const val USER_ID_PREFIX = "user_id:"
     }
 
-    fun cacheUserSession(token: String, expiresIn: Long, user: User) {
-        val key = "$USER_SESSION_PREFIX$token"
+    fun cacheAWSUser(id: String, expiresIn: Long, user: User) {
+        val key = "$USER_AWS_PREFIX$id"
         redisTemplate.opsForValue().set(key, user, Duration.ofSeconds(expiresIn))
     }
 
-    fun getUserSession(token: String): User? {
-        val key = "$USER_SESSION_PREFIX$token"
+    fun getAWSUser(id: String): User? {
+        val key = "$USER_AWS_PREFIX$id"
         return redisTemplate.opsForValue().get(key)
     }
 
-    fun deleteUserSession(token: String) {
-        val key = "$USER_SESSION_PREFIX$token"
+    fun deleteAWSUser(id: String) {
+        val key = "$USER_AWS_PREFIX$id"
         redisTemplate.delete(key)
+    }
+
+    fun cacheIDUser(id: Long, expiresIn: Long, user: User) {
+        val key = "$USER_ID_PREFIX$id"
+        redisTemplate.opsForValue().set(key, user, Duration.ofSeconds(expiresIn))
+    }
+
+    fun getIDUser(id: Long): User? {
+        val key = "$USER_ID_PREFIX$id"
+        return redisTemplate.opsForValue().get(key)
+    }
+
+    fun deleteIDUser(id: Long) {
+        val key = "$USER_ID_PREFIX$id"
+        redisTemplate.delete(key)
+    }
+
+    fun getIDUsers(ids: List<Long>): Map<Long, User> {
+        val keys = ids.map { "$USER_ID_PREFIX$it" }
+        val users = redisTemplate.opsForValue().multiGet(keys) ?: emptyList()
+        return ids.zip(users).mapNotNull { (id, user) ->
+            user?.let { id to it }
+        }.toMap()
     }
 }

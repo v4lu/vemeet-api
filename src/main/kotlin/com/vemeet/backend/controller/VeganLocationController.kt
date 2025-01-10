@@ -3,17 +3,18 @@ import com.vemeet.backend.dto.ExceptionResponse
 import com.vemeet.backend.dto.VeganLocationRequest
 import com.vemeet.backend.dto.VeganLocationResponse
 import com.vemeet.backend.dto.VeganLocationUpdateRequest
+import com.vemeet.backend.exception.NotAllowedException
 import com.vemeet.backend.service.VeganLocationService
-import com.vemeet.backend.utils.extractAccessToken
+import com.vemeet.backend.utils.CognitoIdExtractor
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.media.Content
 import io.swagger.v3.oas.annotations.media.Schema
 import io.swagger.v3.oas.annotations.responses.ApiResponse
 import io.swagger.v3.oas.annotations.tags.Tag
 import jakarta.validation.Valid
-import org.springframework.data.domain.Page
 import org.springframework.data.domain.Pageable
 import org.springframework.http.ResponseEntity
+import org.springframework.security.core.Authentication
 import org.springframework.web.bind.annotation.*
 
 @RestController
@@ -49,32 +50,13 @@ class VeganLocationController(
     @GetMapping
     @Operation(
         summary = "Get all vegan locations",
-        description = """
-        Retrieve a paginated list of vegan locations. Supports searching and sorting.
-        
-        Example usage:
-        - Basic: /v1/vegan-locations
-        - With search: /v1/vegan-locations?search=cafe
-        - With pagination: /v1/vegan-locations?page=0&size=10
-        - With sorting: /v1/vegan-locations?sort=name,asc
-        - Combined: /v1/vegan-locations?search=cafe&page=0&size=10&sort=name,asc&sort=city,desc
-    """,
-        responses = [
-            ApiResponse(
-                responseCode = "200", description = "Successfully retrieved locations",
-                content = [Content(schema = Schema(implementation = Page::class))]
-            ),
-            ApiResponse(
-                responseCode = "422", description = "Location missing some fields or they are not valid, it shows errors too",
-                content = [Content(schema = Schema(implementation = ExceptionResponse::class))]
-            )
-        ]
+        description = "Retrieve a paginated list of vegan locations. Supports searching and sorting."
     )
     fun getAllLocations(
         @RequestParam search: String?,
         pageable: Pageable
-    ): ResponseEntity<Page<VeganLocationResponse>> {
-        val locations = veganLocationService.getAllLocations(search, pageable)
+    ): ResponseEntity<List<VeganLocationResponse>> {
+        val locations = veganLocationService.getAllLocations(search)
         return ResponseEntity.ok(locations.map { VeganLocationResponse.fromVeganLocation(it) })
     }
 
@@ -94,10 +76,11 @@ class VeganLocationController(
     )
     fun createLocation(
         @Valid @RequestBody request: VeganLocationRequest,
-        @RequestHeader("Authorization") authHeader: String
+        authentication: Authentication,
     ): ResponseEntity<VeganLocationResponse> {
-        val accessToken = extractAccessToken(authHeader)
-        val createdLocation = veganLocationService.createLocation(request, accessToken)
+        val cognitoId = CognitoIdExtractor.extractCognitoId(authentication)  ?: throw NotAllowedException("Not valid token")
+
+        val createdLocation = veganLocationService.createLocation(request, cognitoId)
         return ResponseEntity.ok(createdLocation)
     }
 
@@ -123,10 +106,10 @@ class VeganLocationController(
     fun updateLocation(
         @PathVariable id: Long,
         @Valid @RequestBody request: VeganLocationUpdateRequest,
-        @RequestHeader("Authorization") authHeader: String
-    ): ResponseEntity<VeganLocationResponse> {
-        val accessToken = extractAccessToken(authHeader)
-        val updatedLocation = veganLocationService.updateLocation(id, request, accessToken)
+        authentication: Authentication,
+        ): ResponseEntity<VeganLocationResponse> {
+        val cognitoId = CognitoIdExtractor.extractCognitoId(authentication)  ?: throw NotAllowedException("Not valid token")
+        val updatedLocation = veganLocationService.updateLocation(id, request, cognitoId)
         return ResponseEntity.ok(VeganLocationResponse.fromVeganLocation(updatedLocation))
     }
 
@@ -147,10 +130,12 @@ class VeganLocationController(
     )
     fun deleteLocation(
         @PathVariable id: Long,
-        @RequestHeader("Authorization") authHeader: String
-    ): ResponseEntity<Unit> {
-        val accessToken = extractAccessToken(authHeader)
-        veganLocationService.deleteLocation(id, accessToken)
+        authentication: Authentication,
+
+        ): ResponseEntity<Unit> {
+        val cognitoId = CognitoIdExtractor.extractCognitoId(authentication)  ?: throw NotAllowedException("Not valid token")
+
+        veganLocationService.deleteLocation(id, cognitoId)
         return ResponseEntity.noContent().build()
     }
 }

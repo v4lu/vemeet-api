@@ -29,32 +29,40 @@ data class User(
     @Column(name = "inbox_locked")
     var inboxLocked: Boolean = false,
 
-    var gender: String? = "",
+    @Column(name = "swiper_mode")
+    var swiperMode: Boolean = false,
 
-    @Column(name = "birthplace_lat")
-    var birthplaceLat: Double? = null,
-
-    @Column(name = "birthplace_lng")
-    var birthplaceLng: Double? = null,
-
-    @Column(name = "birthplace_name")
-    var birthplaceName: String? = null,
-
-    @Column(name = "residence_lat")
-    var residenceLat: Double? = null,
-
-    @Column(name = "residence_lng")
-    var residenceLng: Double? = null,
-
-    @Column(name = "residence_name")
-    var residenceName: String? = null,
+    var gender: String? = null,
 
     var bio: String? = null,
 
     var name: String? = null,
 
+    @Column(name = "country_name")
+    var countryName: String? = null,
+
+    @Column(name = "country_flag")
+    var countryFlag: String? = null,
+
+    @Column(name = "country_iso_code")
+    var countryIsoCode: String? = null,
+
+    @Column(name = "country_lat")
+    var countryLat: Double? = null,
+
+    @Column(name = "country_lng")
+    var countryLng: Double? = null,
+
+    @Column(name = "city_name")
+    var cityName: String? = null,
+
+    @Column(name = "city_lat")
+    var cityLat: Double? = null,
+
+    @Column(name = "city_lng")
+    var cityLng: Double? = null,
+
     @OneToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "profile_image_id")
-    var profileImage: Image? = null,
-
+    var profileImage: Image? = null
 )

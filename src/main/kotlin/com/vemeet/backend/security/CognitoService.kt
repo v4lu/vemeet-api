@@ -210,4 +210,12 @@ class CognitoService(private val cognitoClient: AWSCognitoIdentityProvider) {
             throw InvalidConfirmationCodeException("Invalid confirmation code")
         }
     }
+
+
+    fun getEmailByAccessToken(accessToken: String): String {
+        val request = GetUserRequest().withAccessToken(accessToken)
+        val result = cognitoClient.getUser(request)
+        return result.userAttributes.find { it.name == "email" }?.value
+            ?: throw Exception("Unable to find user email")
+    }
 }

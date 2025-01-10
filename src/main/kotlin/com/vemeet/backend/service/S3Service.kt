@@ -18,24 +18,36 @@ class S3Service(private val s3Client: S3Client) {
     @Value("\${aws.region}")
     lateinit var region: String
 
-
     fun uploadFile(file: MultipartFile): UploadResponse {
+        if (file.isEmpty) {
+            throw IllegalArgumentException("File cannot be empty")
+        }
+
+        val fileExtension = file.originalFilename?.substringAfterLast('.', "")
+        val contentType = when (fileExtension?.lowercase()) {
+            "mp3", "wav", "ogg" -> "audio/${fileExtension.lowercase()}"
+            else -> file.contentType ?: "application/octet-stream"
+        }
+
         val fileName = "${UUID.randomUUID()}-${file.originalFilename}"
         val request = PutObjectRequest.builder()
             .bucket(bucketName)
             .key(fileName)
+            .contentType(contentType)
             .build()
 
-        try {
 
-
+        return try {
             s3Client.putObject(request, RequestBody.fromInputStream(file.inputStream, file.size))
             val url = "https://$bucketName.s3.$region.amazonaws.com/$fileName"
-            return UploadResponse(url)
+            UploadResponse(url)
         } catch (e: Exception) {
-            println(e.message)
-            println(e.cause)
-            throw e
+            println("Error uploading file: ${e.message}")
+            e.printStackTrace()
+            throw RuntimeException("Failed to upload file", e)
         }
     }
+
+
+
 }

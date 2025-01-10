@@ -5,6 +5,7 @@ import com.vemeet.backend.dto.LocationReviewResponse
 import com.vemeet.backend.dto.LocationReviewUpdateRequest
 import com.vemeet.backend.exception.ResourceNotFoundException
 import com.vemeet.backend.model.LocationReview
+import com.vemeet.backend.model.NotificationTypeEnum
 import com.vemeet.backend.model.ReviewImage
 import com.vemeet.backend.model.User
 import com.vemeet.backend.repository.LocationReviewRepository
@@ -19,6 +20,7 @@ import java.time.Instant
 class LocationReviewService(
     private val locationReviewRepository: LocationReviewRepository,
     private val veganLocationRepository: VeganLocationRepository,
+    private val notificationService: NotificationService,
 ) {
 
     @Transactional(readOnly = true)
@@ -49,7 +51,19 @@ class LocationReviewService(
             review.images.add(ReviewImage(review = review, imageUrl = imageUrl))
         }
 
+
         val savedReview = locationReviewRepository.save(review)
+
+        savedReview.location?.let {
+            it.user?.let { it1 ->
+                notificationService.createNotification(
+                    it1.id,
+                    NotificationTypeEnum.NEW_COMMENT.typeName,
+                    "${user.username} has made new review",
+                )
+            }
+
+        }
         return LocationReviewResponse.from(savedReview)
     }
 
@@ -62,21 +76,17 @@ class LocationReviewService(
         }
 
         review.apply {
-            request.rating.let {
-                if (it != null) {
-                    rating = it
-                }
-            }
+            request.rating?.let { rating = it }
             request.comment?.let { comment = it }
             updatedAt = Instant.now()
         }
 
-        request.imagesToAdd?.forEach { imageUrl ->
-            review.images.add(ReviewImage(review = review, imageUrl = imageUrl))
-        }
-
         request.imageIdsToRemove?.let { idsToRemove ->
             review.images.removeIf { it.id in idsToRemove }
+        }
+
+        request.imagesToAdd?.forEach { imageUrl ->
+            review.images.add(ReviewImage(review = review, imageUrl = imageUrl))
         }
 
         val updatedReview = locationReviewRepository.save(review)

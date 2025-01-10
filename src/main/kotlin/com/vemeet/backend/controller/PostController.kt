@@ -1,9 +1,10 @@
 package com.vemeet.backend.controller
 
 import com.vemeet.backend.dto.*
+import com.vemeet.backend.exception.NotAllowedException
 import com.vemeet.backend.service.PostService
 import com.vemeet.backend.service.UserService
-import com.vemeet.backend.utils.extractAccessToken
+import com.vemeet.backend.utils.CognitoIdExtractor
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.media.Content
 import io.swagger.v3.oas.annotations.media.Schema
@@ -12,6 +13,7 @@ import io.swagger.v3.oas.annotations.tags.Tag
 import org.springframework.data.domain.Page
 import org.springframework.data.domain.Pageable
 import org.springframework.http.ResponseEntity
+import org.springframework.security.core.Authentication
 import org.springframework.web.bind.annotation.*
 
 @RestController
@@ -19,7 +21,7 @@ import org.springframework.web.bind.annotation.*
 @Tag(name = "Post", description = "Post endpoints")
 class PostController(
     private val postService: PostService,
-    private val userService: UserService
+    private val userService: UserService,
 ) {
 
     @GetMapping("/{postId}")
@@ -42,10 +44,10 @@ class PostController(
     )
     fun getPost(
         @PathVariable postId: Long,
-        @RequestHeader("Authorization") authHeader: String
+        authentication: Authentication,
     ): ResponseEntity<PostResponse> {
-        val accessToken = extractAccessToken(authHeader)
-        val currentUser = userService.getSessionUser(accessToken)
+        val cognitoId = CognitoIdExtractor.extractCognitoId(authentication)  ?: throw NotAllowedException("Not valid token")
+        val currentUser = userService.getSessionUser(cognitoId)
         val post = postService.getPostById(postId, currentUser)
         return ResponseEntity.ok(post)
     }
@@ -61,11 +63,11 @@ class PostController(
         ]
     )
     fun getVisiblePosts(
-        @RequestHeader("Authorization") authHeader: String,
+        authentication: Authentication,
         pageable: Pageable
     ): ResponseEntity<Page<PostResponse>> {
-        val accessToken = extractAccessToken(authHeader)
-        val currentUser = userService.getSessionUser(accessToken)
+        val cognitoId = CognitoIdExtractor.extractCognitoId(authentication)  ?: throw NotAllowedException("Not valid token")
+        val currentUser = userService.getSessionUser(cognitoId)
         val posts = postService.getVisiblePosts(currentUser, pageable)
         return ResponseEntity.ok(posts)
     }
@@ -97,11 +99,11 @@ class PostController(
         ]
     )
     fun createPost(
-        @RequestHeader("Authorization") authHeader: String,
+        authentication: Authentication,
         @RequestBody request: PostCreateRequest
     ): ResponseEntity<PostResponse> {
-        val accessToken = extractAccessToken(authHeader)
-        val currentUser = userService.getSessionUser(accessToken)
+        val cognitoId = CognitoIdExtractor.extractCognitoId(authentication)  ?: throw NotAllowedException("Not valid token")
+        val currentUser = userService.getSessionUser(cognitoId)
         val createdPost = postService.createPost(currentUser, request)
         return ResponseEntity.ok(createdPost)
     }
@@ -126,11 +128,11 @@ class PostController(
     )
     fun updatePost(
         @PathVariable postId: Long,
-        @RequestHeader("Authorization") authHeader: String,
+        authentication: Authentication,
         @RequestBody request: PostUpdateRequest
     ): ResponseEntity<PostResponse> {
-        val accessToken = extractAccessToken(authHeader)
-        val currentUser = userService.getSessionUser(accessToken)
+        val cognitoId = CognitoIdExtractor.extractCognitoId(authentication)  ?: throw NotAllowedException("Not valid token")
+        val currentUser = userService.getSessionUser(cognitoId)
         val updatedPost = postService.updatePost(postId, currentUser, request)
         return ResponseEntity.ok(updatedPost)
     }
@@ -152,10 +154,10 @@ class PostController(
     )
     fun deletePost(
         @PathVariable postId: Long,
-        @RequestHeader("Authorization") authHeader: String
+        authentication: Authentication
     ): ResponseEntity<Unit> {
-        val accessToken = extractAccessToken(authHeader)
-        val currentUser = userService.getSessionUser(accessToken)
+        val cognitoId = CognitoIdExtractor.extractCognitoId(authentication)  ?: throw NotAllowedException("Not valid token")
+        val currentUser = userService.getSessionUser(cognitoId)
         postService.deletePost(postId, currentUser)
         return ResponseEntity.noContent().build()
     }
@@ -184,11 +186,11 @@ class PostController(
     )
     fun addReaction(
         @PathVariable postId: Long,
-        @RequestHeader("Authorization") authHeader: String,
+        authentication: Authentication,
         @RequestBody request: ReactionCreateRequest
     ): ResponseEntity<PostResponse> {
-        val accessToken = extractAccessToken(authHeader)
-        val currentUser = userService.getSessionUser(accessToken)
+        val cognitoId = CognitoIdExtractor.extractCognitoId(authentication)  ?: throw NotAllowedException("Not valid token")
+        val currentUser = userService.getSessionUser(cognitoId)
         val updatedPost = postService.addReaction(postId, currentUser, request)
         return ResponseEntity.ok(updatedPost)
     }
@@ -209,11 +211,67 @@ class PostController(
     )
     fun removeReaction(
         @PathVariable postId: Long,
-        @RequestHeader("Authorization") authHeader: String
+        authentication: Authentication
     ): ResponseEntity<PostResponse> {
-        val accessToken = extractAccessToken(authHeader)
-        val currentUser = userService.getSessionUser(accessToken)
+        val cognitoId = CognitoIdExtractor.extractCognitoId(authentication)  ?: throw NotAllowedException("Not valid token")
+        val currentUser = userService.getSessionUser(cognitoId)
         val updatedPost = postService.removeReaction(postId, currentUser)
         return ResponseEntity.ok(updatedPost)
+    }
+
+    @GetMapping("/session")
+    @Operation(
+        summary = "Get user posts by session",
+        description = """
+             Example usage:
+        - Basic: /v1/posts/session
+        - With search: /v1/posts/session?search=cafe
+        - With pagination: /v1/posts/session?page=0&size=10
+        - With sorting: /v1/posts/session?sort=name,asc
+        - Combined: /v1/posts/session?search=cafe&page=0&size=10&sort=name,asc&sort=city,desc
+        """,
+        responses = [
+            ApiResponse(
+                responseCode = "200", description = "Successfully retrieved posts",
+                content = [Content(schema = Schema(implementation = Page::class))]
+            )
+        ]
+    )
+    fun getSessionPosts(
+        authentication: Authentication,
+        pageable: Pageable
+    ): ResponseEntity<Page<PostResponse>> {
+        val cognitoId = CognitoIdExtractor.extractCognitoId(authentication)  ?: throw NotAllowedException("Not valid token")
+
+        val currentUser = userService.getSessionUser(cognitoId)
+        val posts = postService.getUserPosts(currentUser.id, pageable)
+        return ResponseEntity.ok(posts)
+    }
+
+
+    @GetMapping("/user/{userId}")
+    @Operation(
+        summary = "Get user posts by user id ",
+        description = """
+             Example usage:
+        - Basic: /v1/posts/session
+        - With search: /v1/posts/user/{id}?search=cafe
+        - With pagination: /v1/posts/user/{id}?page=0&size=10
+        - With sorting: /v1/posts/user/{id}?sort=name,asc
+        - Combined: /v1/posts/user/{id}?search=cafe&page=0&size=10&sort=name,asc&sort=city,desc
+        """,
+        responses = [
+            ApiResponse(
+                responseCode = "200", description = "Successfully retrieved posts",
+                content = [Content(schema = Schema(implementation = Page::class))]
+            )
+        ]
+    )
+    fun getUserPosts(
+        @PathVariable userId: Long,
+        pageable: Pageable
+    ): ResponseEntity<Page<PostResponse>> {
+        val posts = postService.getUserPosts(userId, pageable)
+        return ResponseEntity.ok(posts)
     }
 }

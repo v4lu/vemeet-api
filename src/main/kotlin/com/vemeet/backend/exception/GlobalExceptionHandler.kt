@@ -3,19 +3,30 @@ package com.vemeet.backend.exception
 import com.vemeet.backend.dto.ExceptionResponse
 import com.vemeet.backend.dto.FieldException
 import org.apache.coyote.BadRequestException
+import org.springframework.dao.InvalidDataAccessApiUsageException
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.security.authentication.BadCredentialsException
-import org.springframework.web.ErrorResponse
 import org.springframework.web.HttpRequestMethodNotSupportedException
 import org.springframework.web.bind.MethodArgumentNotValidException
 import org.springframework.web.bind.annotation.ControllerAdvice
 import org.springframework.web.bind.annotation.ExceptionHandler
+import org.springframework.web.client.HttpClientErrorException.BadRequest
 import org.springframework.web.context.request.WebRequest
 import org.springframework.web.servlet.NoHandlerFoundException
 
 @ControllerAdvice
 class GlobalExceptionHandler {
+
+    @ExceptionHandler(NotConfirmedEmailException::class)
+    fun handleUserNotConfirmedException(ex: NotConfirmedEmailException): ResponseEntity<ExceptionResponse> {
+        val errorResponse = ExceptionResponse(
+            statusCode = HttpStatus.FORBIDDEN.value(),
+            message = ex.message,
+        )
+
+        return ResponseEntity(errorResponse, HttpStatus.FORBIDDEN)
+    }
 
     @ExceptionHandler(IllegalStateException::class)
     fun handleIllegalStateException(ex: IllegalStateException): ResponseEntity<ExceptionResponse> {
@@ -30,6 +41,16 @@ class GlobalExceptionHandler {
 
     @ExceptionHandler(BadRequestException::class)
     fun handleBadRequestException(ex: BadRequestException): ResponseEntity<ExceptionResponse> {
+        val errorResponse = ExceptionResponse(
+            statusCode = HttpStatus.BAD_REQUEST.value(),
+            message = ex.message,
+        )
+
+        return ResponseEntity(errorResponse, HttpStatus.BAD_REQUEST)
+    }
+
+    @ExceptionHandler(BadRequest::class)
+    fun handleBadRequest(ex: BadRequest): ResponseEntity<ExceptionResponse> {
         val errorResponse = ExceptionResponse(
             statusCode = HttpStatus.BAD_REQUEST.value(),
             message = ex.message,
@@ -161,6 +182,15 @@ class GlobalExceptionHandler {
             statusCode = HttpStatus.CONFLICT.value(),
             message = ex.message ?: "Email already exists"
         )
+        return ResponseEntity(errorResponse, HttpStatus.CONFLICT)
+    }
+
+    @ExceptionHandler(InvalidDataAccessApiUsageException::class)
+    fun handleInvalidDataAccessApiUsageException(ex: InvalidDataAccessApiUsageException): ResponseEntity<ExceptionResponse> {
+       val errorResponse = ExceptionResponse(
+           statusCode = HttpStatus.CONFLICT.value(),
+           message = ex.message ?: "This action is not allowed"
+       )
         return ResponseEntity(errorResponse, HttpStatus.CONFLICT)
     }
 

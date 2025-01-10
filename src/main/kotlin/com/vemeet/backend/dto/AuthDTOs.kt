@@ -190,3 +190,9 @@ data class ConfirmEmailChangeRequest(
     @field:NotBlank(message = "Confirmation code is required")
     val confirmationCode: String
 )
+
+@Schema(description = "Email")
+data class EmailResponse(
+    @Schema(description = "Email address", example = "temp@temp.com")
+    val email: String
+)

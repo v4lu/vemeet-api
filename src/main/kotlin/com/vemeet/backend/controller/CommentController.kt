@@ -3,9 +3,10 @@ import com.vemeet.backend.dto.CommentCreateRequest
 import com.vemeet.backend.dto.CommentReactionCreateRequest
 import com.vemeet.backend.dto.CommentResponse
 import com.vemeet.backend.dto.CommentUpdateRequest
+import com.vemeet.backend.exception.NotAllowedException
 import com.vemeet.backend.service.CommentService
 import com.vemeet.backend.service.UserService
-import com.vemeet.backend.utils.extractAccessToken
+import com.vemeet.backend.utils.CognitoIdExtractor
 import org.springframework.web.bind.annotation.*
 import org.springframework.http.ResponseEntity
 import io.swagger.v3.oas.annotations.Operation
@@ -13,6 +14,7 @@ import io.swagger.v3.oas.annotations.media.Content
 import io.swagger.v3.oas.annotations.media.Schema
 import io.swagger.v3.oas.annotations.responses.ApiResponse
 import io.swagger.v3.oas.annotations.tags.Tag
+import org.springframework.security.core.Authentication
 
 @RestController
 @RequestMapping("/v1/comments")
@@ -29,9 +31,10 @@ class CommentController(
     fun createPostComment(
         @PathVariable postId: Long,
         @RequestBody request: CommentCreateRequest,
-        @RequestHeader("Authorization") authHeader: String
+        authentication: Authentication
     ): ResponseEntity<CommentResponse> {
-        val user = userService.getSessionUser(extractAccessToken(authHeader))
+        val cognitoId = CognitoIdExtractor.extractCognitoId(authentication)  ?: throw NotAllowedException("Not valid token")
+        val user = userService.getSessionUser(cognitoId)
         val comment = commentService.createComment(user, postId, null, request)
         return ResponseEntity.ok(comment)
     }
@@ -43,9 +46,10 @@ class CommentController(
     fun createRecipeComment(
         @PathVariable recipeId: Long,
         @RequestBody request: CommentCreateRequest,
-        @RequestHeader("Authorization") authHeader: String
+        authentication: Authentication
     ): ResponseEntity<CommentResponse> {
-        val user = userService.getSessionUser(extractAccessToken(authHeader))
+        val cognitoId = CognitoIdExtractor.extractCognitoId(authentication)  ?: throw NotAllowedException("Not valid token")
+        val user = userService.getSessionUser(cognitoId)
         val comment = commentService.createComment(user, null, recipeId, request)
         return ResponseEntity.ok(comment)
     }
@@ -66,9 +70,11 @@ class CommentController(
     fun updateComment(
         @PathVariable commentId: Long,
         @RequestBody request: CommentUpdateRequest,
-        @RequestHeader("Authorization") authHeader: String
+        authentication: Authentication,
     ): ResponseEntity<CommentResponse> {
-        val user = userService.getSessionUser(extractAccessToken(authHeader))
+        val cognitoId = CognitoIdExtractor.extractCognitoId(authentication)  ?: throw NotAllowedException("Not valid token")
+        val user = userService.getSessionUser(cognitoId)
+
         val updatedComment = commentService.updateComment(commentId, user, request)
         return ResponseEntity.ok(updatedComment)
     }
@@ -78,9 +84,11 @@ class CommentController(
     @ApiResponse(responseCode = "204", description = "Comment deleted successfully")
     fun deleteComment(
         @PathVariable commentId: Long,
-        @RequestHeader("Authorization") authHeader: String
+        authentication: Authentication,
     ): ResponseEntity<Unit> {
-        val user = userService.getSessionUser(extractAccessToken(authHeader))
+        val cognitoId = CognitoIdExtractor.extractCognitoId(authentication)  ?: throw NotAllowedException("Not valid token")
+        val user = userService.getSessionUser(cognitoId)
+
         commentService.deleteComment(commentId, user)
         return ResponseEntity.noContent().build()
     }
@@ -92,9 +100,11 @@ class CommentController(
     fun addCommentReaction(
         @PathVariable commentId: Long,
         @RequestBody request: CommentReactionCreateRequest,
-        @RequestHeader("Authorization") authHeader: String
+       authentication: Authentication
     ): ResponseEntity<CommentResponse> {
-        val user = userService.getSessionUser(extractAccessToken(authHeader))
+        val cognitoId = CognitoIdExtractor.extractCognitoId(authentication)  ?: throw NotAllowedException("Not valid token")
+        val user = userService.getSessionUser(cognitoId)
+
         val updatedComment = commentService.addReaction(commentId, user, request)
         return ResponseEntity.ok(updatedComment)
     }
@@ -105,9 +115,10 @@ class CommentController(
         content = [Content(schema = Schema(implementation = CommentResponse::class))])
     fun removeCommentReaction(
         @PathVariable commentId: Long,
-        @RequestHeader("Authorization") authHeader: String
+        authentication: Authentication,
     ): ResponseEntity<CommentResponse> {
-        val user = userService.getSessionUser(extractAccessToken(authHeader))
+        val cognitoId = CognitoIdExtractor.extractCognitoId(authentication)  ?: throw NotAllowedException("Not valid token")
+        val user = userService.getSessionUser(cognitoId)
         val updatedComment = commentService.removeReaction(commentId, user)
         return ResponseEntity.ok(updatedComment)
     }

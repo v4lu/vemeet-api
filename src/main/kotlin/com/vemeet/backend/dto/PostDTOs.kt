@@ -2,6 +2,7 @@ package com.vemeet.backend.dto
 
 import com.vemeet.backend.model.Post
 import com.vemeet.backend.model.Reaction
+import com.vemeet.backend.model.User
 import io.swagger.v3.oas.annotations.media.Schema
 import jakarta.validation.constraints.Size
 import java.time.format.DateTimeFormatter
@@ -33,10 +34,10 @@ data class PostResponse(
     val updatedAt: String
 ){
     companion object {
-        fun fromPost(post: Post): PostResponse {
+        fun fromPost(post: Post, user: User): PostResponse {
             return PostResponse(
                 id = post.id,
-                user = UserResponse.fromUser(post.user),
+                user = UserResponse.fromUser(user),
                 content = post.content,
                 images = post.images.map { ImageResponse.fromImage(it.image) },
                 reactions = post.reactions.map { ReactionResponse.fromReaction(it) },
@@ -55,10 +56,11 @@ data class PostCreateRequest(
     val content: String? = null,
 
     @field:Size(max = 10, message = "Cannot upload more than 10 images")
-    @Schema(description = "List of image IDs to associate with the post")
-    val imageIds: List<Long>? = null
+    @Schema(description = "List of image urls")
+    val images: List<String>? = null
 ) {
-    fun isValid(): Boolean = !content.isNullOrBlank() || !imageIds.isNullOrEmpty()
+    @Schema(description = "This is check func, so user can upload image or post, both can't be empty")
+    fun isValid(): Boolean = !content.isNullOrBlank() || !images.isNullOrEmpty()
 }
 
 @Schema(description = "Post Update Request object")

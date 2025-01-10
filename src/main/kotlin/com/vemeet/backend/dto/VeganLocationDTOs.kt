@@ -67,7 +67,10 @@ data class VeganLocationResponse(
     val updatedAt: String,
 
     @Schema(description = "List of image URLs",  example = "[https://www.greencafe.com, https://www.greencafe.com]")
-    val images: List<LocationImageResponse>
+    val images: List<LocationImageResponse>,
+
+    @Schema(description = "List of reviews")
+    val reviews: List<LocationReviewResponse>
 ) {
     companion object {
         fun fromVeganLocation(location: VeganLocation): VeganLocationResponse {
@@ -89,7 +92,8 @@ data class VeganLocationResponse(
                 isVerified = location.isVerified,
                 createdAt = DateTimeFormatter.ISO_INSTANT.format(location.createdAt),
                 updatedAt = DateTimeFormatter.ISO_INSTANT.format(location.updatedAt),
-                images = location.images.map { LocationImageResponse(it) }
+                images = location.images.map { LocationImageResponse(it) },
+                reviews = location.reviews.map { LocationReviewResponse.from(it) }
             )
         }
     }
@@ -155,7 +159,7 @@ data class VeganLocationRequest(
     @Schema(description = "Website URL", example = "https://www.greencafe.com")
     val websiteUrl: String?,
 
-    @field:Pattern(regexp = "^\\+?[0-9]{10,20}$", message = "Invalid phone number format")
+    @field:Pattern(regexp = "^$|^\\+?[0-9]{10,20}$", message = "Invalid phone number format")
     @Schema(description = "Phone number", example = "+1234567890")
     val phoneNumber: String?,
 
@@ -210,7 +214,7 @@ data class VeganLocationUpdateRequest(
     @Schema(description = "Website URL", example = "https://www.greencafe.com")
     val websiteUrl: String? = null,
 
-    @field:Pattern(regexp = "^\\+?[0-9]{10,20}$", message = "Invalid phone number format")
+    @field:Pattern(regexp = "^$|^\\+?[0-9]{10,20}$", message = "Invalid phone number format")
     @Schema(description = "Phone number", example = "+1234567890")
     val phoneNumber: String? = null,
 

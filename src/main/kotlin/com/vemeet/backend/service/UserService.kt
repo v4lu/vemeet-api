@@ -1,6 +1,8 @@
 package com.vemeet.backend.service
 
+import com.vemeet.backend.cache.SessionCache
 import com.vemeet.backend.cache.UserCache
+import com.vemeet.backend.dto.UserResponse
 import com.vemeet.backend.model.User
 import com.vemeet.backend.repository.UserRepository
 import org.springframework.stereotype.Service
@@ -15,13 +17,13 @@ import com.vemeet.backend.repository.ImageRepository
 @Service
 class UserService(
     private val userRepository: UserRepository,
-    private val userCache: UserCache,
-    private val imageRepository: ImageRepository
+    private val sessionCache: SessionCache,
+    private val imageRepository: ImageRepository,
+    private val userCache: UserCache
 ) {
 
-    fun getSessionUser(accessToken: String): User {
-        return userCache.getUserSession(accessToken)
-            ?: throw Exception("User not found in cache")
+    fun getSessionUser(cognitoId: String): User {
+        return sessionCache.getUserSession(cognitoId) ?: fetchAndCacheUser(cognitoId)
     }
 
     @Transactional
@@ -40,15 +42,18 @@ class UserService(
 
         userUpdateRequest.bio?.let { user.bio = it }
         userUpdateRequest.name?.let { user.name = it }
-        userUpdateRequest.birthplaceLat?.let { user.birthplaceLat = it }
-        userUpdateRequest.birthplaceLng?.let { user.birthplaceLng = it }
         userUpdateRequest.gender?.let { user.gender = it }
-        userUpdateRequest.birthplaceName?.let { user.birthplaceName = it }
-        userUpdateRequest.residenceLat?.let { user.residenceLat = it }
-        userUpdateRequest.residenceLng?.let { user.residenceLng = it }
-        userUpdateRequest.residenceName?.let { user.residenceName = it }
+        userUpdateRequest.countryName?.let { user.countryName = it }
+        userUpdateRequest.countryFlag?.let { user.countryFlag = it }
+        userUpdateRequest.countryIsoCode?.let { user.countryIsoCode = it }
+        userUpdateRequest.countryLat?.let { user.countryLat = it }
+        userUpdateRequest.countryLng?.let { user.countryLng = it }
+        userUpdateRequest.cityName?.let { user.cityName = it }
+        userUpdateRequest.cityLat?.let { user.cityLat = it }
+        userUpdateRequest.cityLng?.let { user.cityLng = it }
         userUpdateRequest.isPrivate?.let { user.isPrivate = it }
         userUpdateRequest.inboxLocked.let { user.inboxLocked = it }
+        userUpdateRequest.swiperMode.let { user.swiperMode = it }
 
         when {
             userUpdateRequest.newImageUrl != null -> {
@@ -67,8 +72,53 @@ class UserService(
         }
 
         val updatedUser = userRepository.save(user)
-        userCache.deleteUserSession(accessToken)
-        userCache.cacheUserSession(accessToken, 3600, updatedUser) // 1h
+        sessionCache.deleteUserSession(accessToken)
+        userCache.deleteIDUser(user.id)
+        userCache.deleteAWSUser(user.awsCognitoId)
+        sessionCache.cacheUserSession(accessToken, 3600, updatedUser) // 1h
+        userCache.cacheIDUser(updatedUser.id, 3600, updatedUser)
+        userCache.cacheAWSUser(updatedUser.awsCognitoId, 3600, updatedUser)
         return updatedUser
+    }
+
+    fun getUserById(userId: Long): UserResponse {
+        val cachedUser = userCache.getIDUser(userId)
+
+        if (cachedUser != null) {
+            return UserResponse.fromUser(cachedUser)
+        }
+
+        val user = userRepository.findUserById(userId)
+            ?: throw ResourceNotFoundException("User with $userId not found")
+
+        userCache.cacheIDUser(userId, 3600, user)
+        userCache.cacheAWSUser(user.awsCognitoId, 3600, user)
+
+        return UserResponse.fromUser(user)
+    }
+
+    fun getUserByIdFull(userId: Long): User {
+        val cachedUser = userCache.getIDUser(userId)
+
+        if (cachedUser != null) {
+            return cachedUser
+        }
+
+        val user = userRepository.findUserById(userId)
+            ?: throw ResourceNotFoundException("User with $userId not found")
+
+        userCache.cacheIDUser(userId, 3600, user)
+        userCache.cacheAWSUser(user.awsCognitoId, 3600, user)
+
+        return user
+    }
+
+    private fun fetchAndCacheUser(cognitoId: String): User {
+        val user = userRepository.findUserByAwsCognitoId(cognitoId)
+            ?: throw ResourceNotFoundException("User not found for Cognito ID: $cognitoId")
+
+        sessionCache.cacheUserSession(cognitoId, 3600, user)
+
+        return user
     }
 }

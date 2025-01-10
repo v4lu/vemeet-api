@@ -6,6 +6,8 @@ import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.security.config.annotation.web.builders.HttpSecurity
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity
+import org.springframework.security.core.GrantedAuthority
+import org.springframework.security.oauth2.jwt.Jwt
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter
 import org.springframework.security.oauth2.server.resource.authentication.JwtGrantedAuthoritiesConverter
 import org.springframework.security.web.SecurityFilterChain
@@ -39,6 +41,7 @@ class SecurityConfig(
                     ).permitAll()
                     .requestMatchers("/swagger-ui/**", "/swagger-ui.html", "/v3/api-docs/**").permitAll()
                     .requestMatchers("/hello/**").permitAll()
+                    .requestMatchers("/chat/**").permitAll()
                     .anyRequest().authenticated()
             }
             .oauth2ResourceServer { oauth2 ->
@@ -62,7 +65,14 @@ class SecurityConfig(
         jwtGrantedAuthoritiesConverter.setAuthorityPrefix("ROLE_")
 
         val jwtAuthenticationConverter = JwtAuthenticationConverter()
-        jwtAuthenticationConverter.setJwtGrantedAuthoritiesConverter(jwtGrantedAuthoritiesConverter)
+        jwtAuthenticationConverter.setJwtGrantedAuthoritiesConverter { jwt: Jwt ->
+            val grantedAuthorities = jwtGrantedAuthoritiesConverter.convert(jwt)
+            val cognitoId = jwt.claims["sub"] as String?
+            if (cognitoId != null) {
+                grantedAuthorities?.add(GrantedAuthority { "COGNITO_ID_$cognitoId" })
+            }
+            grantedAuthorities
+        }
 
         return jwtAuthenticationConverter
     }

@@ -2,15 +2,17 @@ package com.vemeet.backend.controller
 import com.vemeet.backend.dto.ImageResponse
 import com.vemeet.backend.dto.ImageUploadRequest
 import com.vemeet.backend.dto.ImageUploadResponse
+import com.vemeet.backend.exception.NotAllowedException
 import com.vemeet.backend.service.ImageService
 import com.vemeet.backend.service.UserService
-import com.vemeet.backend.utils.extractAccessToken
+import com.vemeet.backend.utils.CognitoIdExtractor
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.tags.Tag
 import jakarta.validation.Valid
+import org.springframework.security.core.Authentication
 
 @RestController
 @RequestMapping("/v1/images")
@@ -38,11 +40,10 @@ class ImageController(
     @Operation(summary = "Upload one or more images")
     fun uploadImages(
         @Valid @RequestBody uploadRequests: List<ImageUploadRequest> ,
-
-        @RequestHeader("Authorization") authHeader: String
+        authentication: Authentication
     ): ResponseEntity<ImageUploadResponse> {
-        val accessToken = extractAccessToken(authHeader)
-        val user = userService.getSessionUser(accessToken)
+        val cognitoId = CognitoIdExtractor.extractCognitoId(authentication)  ?: throw NotAllowedException("Not valid token")
+        val user = userService.getSessionUser(cognitoId)
         val response = imageService.uploadImages(user.id, uploadRequests)
 
         return ResponseEntity(response, HttpStatus.CREATED)
@@ -50,9 +51,9 @@ class ImageController(
 
     @DeleteMapping("/{imageId}")
     @Operation(summary = "Delete an image")
-    fun deleteImage(@PathVariable imageId: Long,@RequestHeader("Authorization") authHeader: String): ResponseEntity<Unit> {
-        val accessToken = extractAccessToken(authHeader)
-        val user = userService.getSessionUser(accessToken)
+    fun deleteImage(@PathVariable imageId: Long, authentication: Authentication): ResponseEntity<Unit> {
+        val cognitoId = CognitoIdExtractor.extractCognitoId(authentication)  ?: throw NotAllowedException("Not valid token")
+        val user = userService.getSessionUser(cognitoId)
         imageService.deleteImage(imageId, user.id)
         return ResponseEntity.noContent().build()
     }
