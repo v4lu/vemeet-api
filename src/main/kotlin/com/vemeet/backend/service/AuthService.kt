@@ -14,6 +14,8 @@ import com.vemeet.backend.model.User
 import com.vemeet.backend.repository.UserRepository
 import com.vemeet.backend.security.CognitoService
 import jakarta.transaction.Transactional
+import org.springframework.http.HttpHeaders
+import org.springframework.http.ResponseEntity
 import org.springframework.security.authentication.BadCredentialsException
 import org.springframework.stereotype.Service
 import java.time.Instant
@@ -51,7 +53,7 @@ class AuthService(
         )
     }
 
-    fun login(logReq : LoginRequest): ResponseEntity<LoginResponse> {
+    fun login(logReq : LoginRequest): LoginResponse {
 
         val authResult = try {
             cognitoService.initiateAuth(logReq.email, logReq.password)
@@ -71,6 +73,10 @@ class AuthService(
         val user = findByAwsCognitoId(cognitoId)
             ?: throw UserNotFoundException("User not found in the database")
 
+        if (user.blocked) {
+            throw BadCredentialsException("User is blocked")
+        }
+
         sessionCache.cacheUserSession(
             cognitoId,
             authResult.authenticationResult.expiresIn.toLong(),
@@ -81,24 +87,13 @@ class AuthService(
         val now = Instant.now()
         val tenYears = now.plus(3650, ChronoUnit.DAYS)
         val accessTokenExpiry =  now.plusSeconds(authResult.authenticationResult.expiresIn.toLong())
-        val loginResponse = LoginResponse(
+        return LoginResponse(
             cognitoId = cognitoId,
             refreshToken = authResult.authenticationResult.refreshToken,
             refreshTokenExpiry = tenYears,
             accessToken = authResult.authenticationResult.accessToken,
             accessTokenExpiry = accessTokenExpiry
         )
-
-        val accessTokenCookie = createSecureCookie("access_token", loginResponse.accessToken, accessTokenExpiry)
-        val refreshTokenCookie = createSecureCookie("refresh_token", loginResponse.refreshToken, thirtyDaysLater)
-        val cognitoIdCookie = createSecureCookie("cognito_id", loginResponse.cognitoId, thirtyDaysLater)
-
-        val headers = HttpHeaders()
-        headers.add(HttpHeaders.SET_COOKIE, accessTokenCookie.toString())
-        headers.add(HttpHeaders.SET_COOKIE, refreshTokenCookie.toString())
-        headers.add(HttpHeaders.SET_COOKIE, cognitoIdCookie.toString())
-
-        return ResponseEntity.ok().headers(headers).body(loginResponse)
     }
 
     @Transactional

@@ -12,9 +12,6 @@ import org.springframework.security.oauth2.server.resource.authentication.JwtAut
 import org.springframework.security.oauth2.server.resource.authentication.JwtGrantedAuthoritiesConverter
 import org.springframework.security.web.SecurityFilterChain
 import org.springframework.web.cors.CorsConfigurationSource
-import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter
-import org.springframework.security.oauth2.server.resource.web.BearerTokenResolver
-import jakarta.servlet.http.HttpServletRequest
 
 @Configuration
 @EnableWebSecurity
@@ -28,7 +25,7 @@ class SecurityConfig(
     fun securityFilterChain(http: HttpSecurity): SecurityFilterChain {
         http
             .csrf { it.disable() }
-            .cors { it.configurationSource(corsConfigurationSource)}
+            .cors { it.configurationSource(corsConfigurationSource) }
             .authorizeHttpRequests { authorize ->
                 authorize
                     .requestMatchers(
@@ -45,11 +42,9 @@ class SecurityConfig(
                     .anyRequest().authenticated()
             }
             .oauth2ResourceServer { oauth2 ->
-                oauth2
-                    .jwt { jwt ->
-                        jwt.jwtAuthenticationConverter(jwtAuthenticationConverter())
-                    }
-                    .bearerTokenResolver(cookieBearerTokenResolver())
+                oauth2.jwt { jwt ->
+                    jwt.jwtAuthenticationConverter(jwtAuthenticationConverter())
+                }
             }
             .exceptionHandling {
                 it.accessDeniedHandler(customAccessDeniedHandler)
@@ -65,6 +60,7 @@ class SecurityConfig(
         jwtGrantedAuthoritiesConverter.setAuthorityPrefix("ROLE_")
 
         val jwtAuthenticationConverter = JwtAuthenticationConverter()
+        jwtAuthenticationConverter.setJwtGrantedAuthoritiesConverter(jwtGrantedAuthoritiesConverter)
         jwtAuthenticationConverter.setJwtGrantedAuthoritiesConverter { jwt: Jwt ->
             val grantedAuthorities = jwtGrantedAuthoritiesConverter.convert(jwt)
             val cognitoId = jwt.claims["sub"] as String?
@@ -75,14 +71,5 @@ class SecurityConfig(
         }
 
         return jwtAuthenticationConverter
-    }
-
-    @Bean
-    fun cookieBearerTokenResolver(): BearerTokenResolver {
-        return BearerTokenResolver { request: HttpServletRequest ->
-            val cookieName = "access_token"
-            val cookies = request.cookies
-            cookies?.find { it.name == cookieName }?.value
-        }
     }
 }

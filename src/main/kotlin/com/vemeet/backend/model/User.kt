@@ -32,6 +32,8 @@ data class User(
     @Column(name = "swiper_mode")
     var swiperMode: Boolean = false,
 
+    var blocked: Boolean = false,
+
     var gender: String? = null,
 
     var bio: String? = null,
