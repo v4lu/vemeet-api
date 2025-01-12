@@ -34,6 +34,9 @@ data class UserResponse(
     @Schema(description = "Whether the user's inbox is locked", example = "false")
     val inboxLocked: Boolean,
 
+    @Schema(description = "Whether the user is blocked", example = "false")
+    val blocked: Boolean,
+
     @Schema(description = "User's gender", example = "Male")
     val gender: String?,
 
@@ -82,6 +85,7 @@ data class UserResponse(
                 isPrivate = user.isPrivate,
                 inboxLocked = user.inboxLocked,
                 swiperMode = user.swiperMode,
+                blocked = user.blocked,
                 gender = user.gender,
                 bio = user.bio,
                 name = user.name,
