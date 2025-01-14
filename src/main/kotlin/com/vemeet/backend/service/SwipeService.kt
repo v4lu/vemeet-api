@@ -21,12 +21,18 @@ class SwipeService(
     private val notificationService: NotificationService
 ) {
 
-    fun getMatches(user: User): List<UserResponse> {
+    fun getMatches(user: User): List<SwiperUserProfileResponse> {
         val matches = matchRepository.findByUser1OrUser2(user, user)
 
         return matches.map { match ->
-            val otherUser = if (match.user1.id == user.id) match.user2 else match.user1
-            UserResponse.fromUser(otherUser)
+            val matchUser = if (match.user1.id == user.id) match.user2 else match.user1
+
+            val profile = swiperUserProfileRepository.findByUserId(matchUser.id)
+                ?: throw ResourceNotFoundException("Profile not found for user with id: ${matchUser.id}")
+
+            val userResponse = UserResponse.fromUser(matchUser)
+
+            SwiperUserProfileResponse.fromSwiperUserProfile(profile, userResponse)
         }
     }
 

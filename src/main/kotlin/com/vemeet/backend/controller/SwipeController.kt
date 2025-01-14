@@ -85,7 +85,7 @@ class SwipeController(
         responses = [
             ApiResponse(
                 responseCode = "200", description = "Successfully retrieved user matches",
-                content = [Content(schema = Schema(implementation = List::class))]
+                content = [Content(schema = Schema(implementation = SwiperUserProfileResponse::class))],
             ),
             ApiResponse(
                 responseCode = "401", description = "Invalid Credentials",
@@ -93,7 +93,7 @@ class SwipeController(
             )
         ]
     )
-    fun getMatches(authentication: Authentication): ResponseEntity<List<UserResponse>> {
+    fun getMatches(authentication: Authentication): ResponseEntity<List<SwiperUserProfileResponse>> {
         val cognitoId = CognitoIdExtractor.extractCognitoId(authentication) ?: throw NotAllowedException("Not valid token")
         val user = userService.getSessionUser(cognitoId)
         val matches = swipeService.getMatches(user)
